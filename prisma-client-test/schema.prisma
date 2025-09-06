@@ -31,6 +31,8 @@ model Project {
   id          Int      @id @default(autoincrement())
   title       String // Proje başlığı (Oyun/Anime adı)
   slug        String   @unique // URL için benzersiz kimlik
+  isFeatured          Boolean  @default(false)
+  progressPercentage  Int?
   type        String // 'oyun' veya 'anime'
   description String? // Açıklama (opsiyonel - ? işareti)
   coverImage  String? // Kapak resmi URL'si (opsiyonel)

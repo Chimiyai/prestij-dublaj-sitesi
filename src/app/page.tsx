@@ -4,7 +4,7 @@ import DubbedGamesSection from "@/components/home/DubbedGamesSection";
 import DubbedAnimeSection from "@/components/home/DubbedAnimeSection";
 import PopularContentSection from "@/components/home/PopularContentSection";
 import SuggestGameSection from "@/components/home/SuggestGameSection";
-import SiteStatsSection from "@/components/home/SiteStatsSection";
+import CountdownSection from "@/components/home/CountdownSection";
 import JoinDiscordSection from "@/components/home/JoinDiscordSection";
 
 export default function HomePage() {
@@ -15,7 +15,7 @@ export default function HomePage() {
       <DubbedAnimeSection />
       <PopularContentSection />
       <SuggestGameSection />
-      <SiteStatsSection />
+      <CountdownSection />
       <JoinDiscordSection />
     </>
   );

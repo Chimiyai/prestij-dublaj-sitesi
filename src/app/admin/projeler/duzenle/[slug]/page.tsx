@@ -48,6 +48,8 @@ async function getProjectDataForEdit(slug: string) {
     bannerImagePublicId: projectFromDb.bannerImagePublicId || null,
     releaseDate: projectFromDb.releaseDate ? new Date(projectFromDb.releaseDate).toISOString().split('T')[0] : '',
     isPublished: projectFromDb.isPublished,
+    isFeaturedForCountdown: projectFromDb.isFeaturedForCountdown,
+    progressPercentage: projectFromDb.progressPercentage === null ? 0 : projectFromDb.progressPercentage,
     price: projectFromDb.price === null ? null : Number(projectFromDb.price),
     currency: projectFromDb.currency || null,
     assignments: projectFromDb.assignments.map((a, index) => ({

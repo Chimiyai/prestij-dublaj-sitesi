@@ -29,6 +29,8 @@ const updateProjectSchema = z.object({
   bannerImagePublicId: z.string().max(255).nullable().optional(),
   releaseDate: z.coerce.date({ errorMap: () => ({ message: "Geçersiz tarih formatı."}) }).nullable().optional(),
   isPublished: z.boolean().optional(),
+  isFeaturedForCountdown: z.boolean().optional(),
+  progressPercentage: z.number().int().min(0).max(100).nullable().optional(),
   price: z.number().min(0, "Fiyat negatif olamaz.").nullable().optional(),
   currency: z.string().length(3, "Para birimi 3 karakter olmalı.").nullable().optional(),
   externalWatchUrl: z.string().url({ message: "Geçersiz URL formatı." }).or(z.literal('')).nullable().optional().transform(val => val === '' ? null : val),

@@ -38,6 +38,8 @@ export interface InitialProjectData {
   bannerImagePublicId: string | null;
   releaseDate: string; // YYYY-MM-DD
   isPublished: boolean;
+  isFeaturedForCountdown: boolean;
+  progressPercentage: number | null;
   price: number | null;
   currency: string | null;
   assignments: AssignmentManagerAssignmentData[];
@@ -63,6 +65,8 @@ interface ApiPayload {
   bannerImagePublicId: string | null;
   releaseDate: string | null;
   isPublished: boolean;
+  isFeaturedForCountdown: boolean;
+  progressPercentage: number | null;
   externalWatchUrl?: string | null;
   price: number | null;
   currency: string | null;
@@ -151,6 +155,9 @@ export default function EditProjectForm({
   
   const [isPublished, setIsPublished] = useState(initialProjectData?.isPublished ?? true);
 
+  const [isFeatured, setIsFeatured] = useState(initialProjectData?.isFeaturedForCountdown ?? false);
+  const [progress, setProgress] = useState(initialProjectData?.progressPercentage ?? 0);
+
 
   // Initial data değiştiğinde state'leri güncelle (form resetleme veya prop güncellemesi için)
   useEffect(() => {
@@ -172,6 +179,8 @@ export default function EditProjectForm({
         })) || []
       );
       setIsPublished(initialProjectData.isPublished ?? true);
+      setIsFeatured(initialProjectData.isFeaturedForCountdown ?? false);
+      setProgress(initialProjectData.progressPercentage ?? 0);
       setExternalWatchUrl(initialProjectData.externalWatchUrl || '');
       setTrailerUrl(initialProjectData?.trailerUrl || null);
       setSelectedCoverFile(null);
@@ -294,6 +303,8 @@ export default function EditProjectForm({
         bannerImagePublicId: finalBannerIdToSubmit,
         releaseDate: releaseDate ? new Date(releaseDate).toISOString() : null,
         isPublished,
+        isFeaturedForCountdown: isFeatured,
+        progressPercentage: progress,
         price: projectType === 'oyun' && price.trim() !== '' ? parseFloat(price) : null,
         currency: projectType === 'oyun' && price.trim() !== '' && currency.trim() !== '' ? currency.trim().toUpperCase() : null,
         assignments: assignmentsForApi,
@@ -457,6 +468,55 @@ export default function EditProjectForm({
         errors={errors}
       />
 
+<div className="border-b border-gray-900/10 dark:border-gray-700 pb-10">
+        <h2 className="text-lg font-semibold leading-7 text-gray-900 dark:text-gray-100">Anasayfa Ayarları</h2>
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          Bu projeyi anasayfadaki geri sayım bölümünde öne çıkarın.
+        </p>
+        
+        {/* Öne Çıkar Checkbox'ı */}
+        <div className="mt-6 space-y-6">
+          <div className="relative flex gap-x-3">
+            <div className="flex h-6 items-center">
+              <input
+                id="isFeatured"
+                name="isFeatured"
+                type="checkbox"
+                checked={isFeatured}
+                onChange={(e) => setIsFeatured(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-600 bg-gray-100 dark:bg-gray-800"
+              />
+            </div>
+            <div className="text-sm leading-6">
+              <label htmlFor="isFeatured" className="font-medium text-gray-900 dark:text-gray-100">
+                Anasayfada Öne Çıkar
+              </label>
+              <p className="text-gray-500 dark:text-gray-400">
+                İşaretlenirse, bu proje (eğer yayın tarihi gelecekteyse) anasayfada gösterilir. Sadece bir proje öne çıkarılabilir.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* İlerleme Yüzdesi Slider'ı (sadece öne çıkarıldıysa göster) */}
+        {isFeatured && (
+            <div className="mt-6">
+                <label htmlFor="progress" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+                    Proje İlerleme Yüzdesi: <span className="font-bold text-indigo-600 dark:text-indigo-400">{progress}%</span>
+                </label>
+                <input
+                    id="progress"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={progress}
+                    onChange={(e) => setProgress(parseInt(e.target.value, 10))}
+                    className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer mt-2"
+                />
+            </div>
+        )}
+      </div>
 
       <div className="mt-6 flex items-center justify-end gap-x-6">
         <button type="button" onClick={() => router.back()} className="text-sm font-semibold leading-6 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 px-3 py-1.5 rounded-md">
