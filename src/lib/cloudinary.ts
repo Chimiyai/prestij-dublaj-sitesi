@@ -13,6 +13,7 @@ interface CloudinaryTransformations {
   quality?: string | number;
   format?: 'auto' | 'webp' | 'png' | 'jpg';
   radius?: string | number;
+  effect?: string;
 }
 
 export function getCloudinaryImageUrlOptimized(
@@ -48,6 +49,7 @@ export function getCloudinaryImageUrlOptimized(
   transParts.push(`q_${transformations.quality || 'auto'}`);
   transParts.push(`f_${transformations.format || 'auto'}`); // << FORMAT EKLE (örn: f_auto)
   if (transformations.radius) transParts.push(`r_${transformations.radius}`);
+  
   
   const transformString = transParts.join(',');
 

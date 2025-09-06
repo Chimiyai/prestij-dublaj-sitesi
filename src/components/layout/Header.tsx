@@ -584,18 +584,12 @@ return (
                     </Link>
                 )}
                 {/* "Prestij'i İndir" Butonu (Desktop için) */}
-                <button 
-                  onClick={handleDownloadClick}
-                  disabled={isDownloadClicked} // Eğer tıklandıysa disable et
-                  className={`btn hidden md:block text-xs sm:text-sm font-medium py-1.5 px-3 sm:px-4 rounded-md transition-colors whitespace-nowrap
-                    ${isDownloadClicked 
-                      ? 'bg-prestij-bg-button/50 text-prestij-text-muted cursor-not-allowed' // Soluk ve pasif stil
-                      : 'bg-prestij-bg-button text-prestij-text-secondary border border-prestij-bg-button hover:bg-prestij-purple hover:border-prestij-purple hover:text-white' // Normal stil
-                    }
-                  `}
-                >
-                  {downloadButtonText}
-                </button>
+                <Link
+    href="/indir"
+    className={`btn hidden md:block text-xs sm:text-sm font-medium py-1.5 px-3 sm:px-4 rounded-md transition-colors whitespace-nowrap bg-prestij-bg-button text-prestij-text-secondary border border-prestij-bg-button hover:bg-prestij-purple hover:border-prestij-purple hover:text-white`}
+>
+    PrestiJ'i İndir
+</Link>
             </div>
           </div>
       </div>
@@ -780,21 +774,13 @@ return (
                                         Giriş Yap
                                     </Link>
                                  )}
-                                <button // Link yerine button kullandım, onClick ile handleDownloadClick'i çağırabiliriz
-                onClick={() => {
-                    handleDownloadClick(); // Ana fonksiyonu çağır
-                    // toggleMobileMenu(); // Menüyü kapatmak isteyebilirsin
-                }}
-                disabled={isDownloadClicked}
-                className={`block w-full text-center py-2.5 px-4 rounded-md transition-colors font-medium
-                    ${isDownloadClicked
-                        ? 'bg-prestij-bg-button/30 text-prestij-text-muted cursor-not-allowed' // Mobil için biraz daha farklı soluk stil olabilir
-                        : 'bg-prestij-bg-button text-prestij-text-secondary border border-prestij-bg-button hover:bg-prestij-purple hover:border-prestij-purple hover:text-white'
-                    }
-                `}
-            >
-                {downloadButtonText}
-            </button>
+                                <Link
+    href="/indir"
+    onClick={toggleMobileMenu} // Menüyü kapat
+    className={`block w-full text-center py-2.5 px-4 rounded-md transition-colors font-medium bg-prestij-bg-button text-prestij-text-secondary border border-prestij-bg-button hover:bg-prestij-purple hover:border-prestij-purple hover:text-white`}
+>
+    PrestiJ'i İndir
+</Link>
                             </div>
                         )}
                     </nav>
