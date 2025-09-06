@@ -5,14 +5,14 @@ import { useState, useTransition, useEffect } from 'react';
 
 interface UpdateUserRoleProps {
   userId: number; // Prisma'dan gelen ID (number)
-  currentRole: 'user' | 'admin';
+  currentRole: 'USER' | 'ADMIN';
   username: string;
   isCurrentUserAdmin: boolean; // Değiştirilmeye çalışılan kullanıcının mevcut admin olup olmadığını kontrol etmek için
 }
 
 export default function UpdateUserRole({ userId, currentRole, username, isCurrentUserAdmin }: UpdateUserRoleProps) {
   const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState<'user' | 'admin'>(currentRole);
+  const [selectedRole, setSelectedRole] = useState<'USER' | 'ADMIN'>(currentRole);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -23,7 +23,7 @@ export default function UpdateUserRole({ userId, currentRole, username, isCurren
   }, [currentRole]);
 
   const handleRoleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedRole(event.target.value as 'user' | 'admin');
+    setSelectedRole(event.target.value as 'USER' | 'ADMIN');
     setError(null); // Yeni bir seçim yapıldığında eski hataları temizle
     setSuccessMessage(null); // Ve eski başarı mesajlarını
   };

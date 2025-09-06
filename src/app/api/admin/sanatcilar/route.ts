@@ -15,7 +15,7 @@ const createArtistSchema = z.object({
 export async function POST(request: NextRequest) { // Request tipi NextRequest oldu
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.role !== 'admin') {
+  if (!session || session.user.role !== 'ADMIN') {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) { // Request tipi NextRequest o
 // GET metodu (eğer varsa) aynı kalabilir, sadece select kısmında imagePublicId seçilmeli
 export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'admin') {
+    if (!session || session.user.role !== 'ADMIN') {
         return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
     }
     try {

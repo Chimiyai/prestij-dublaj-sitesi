@@ -16,6 +16,19 @@ enum RoleInProject {
   DIRECTOR
 }
 
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+
 // -------------------
 
 datasource db {
@@ -90,7 +103,7 @@ model User {
   email                  String   @unique
   username               String   @unique
   password               String?
-  role                   String   @default("user")
+  role                   UserRole @default(USER)
   profileImagePublicId   String?
   bannerImagePublicId    String?
   bio                    String?
@@ -122,6 +135,12 @@ model User {
   reportsAgainst         UserReport[]     @relation("ReportsAgainstUser")
   blocking               UserBlock[]      @relation("BlockingUsers")
   blockedBy              UserBlock[]      @relation("BlockedByUsers")
+
+  teamApplications       TeamApplication[]
+  supportSuggestions     SupportSuggestion[]
+  downloadLogs           DownloadLog[]
+
+  artistProfile   DubbingArtist? @relation("UserToArtistProfile")
 
   @@map("users")
 }
@@ -232,6 +251,10 @@ model Project {
 
   // YENİ EKLENEN ALAN: Bu projeye ait karakterler
   characters ProjectCharacter[] // ProjectCharacter modelindeki 'project' alanı ile zıt ilişki
+
+  isFeaturedForCountdown Boolean  @default(false) // Anasayfada gösterilip gösterilmeyeceği
+  progressPercentage   Int?                        // İlerleme çubuğu yüzdesi (opsiyonel)
+  downloadLogs DownloadLog[] // Bu projeye ait indirme loglarının listesi
 
   @@map("projects")
 }
@@ -410,6 +433,8 @@ model DubbingArtist {
   favoriteCount Int     @default(0)
   likes         DubbingArtistLike[]
   favoritedBy   DubbingArtistFavorite[]
+  userId        Int?            @unique // Bir kullanıcıya sadece bir sanatçı profili bağlanabilir
+  user          User?           @relation("UserToArtistProfile", fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("dubbing_artists")
 }
@@ -495,6 +520,65 @@ model ProjectAssignment {
   @@index([projectId])
   @@index([artistId])
   @@map("project_assignments")
+}
+
+// 1. "Bize Katıl" Başvuruları için model
+model TeamApplication {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  selectedRole RoleInProject // Hangi role başvurduğu
+  message      String?       // Kullanıcının başvuru mesajı
+  
+  status       ApplicationStatus @default(PENDING) // Başvuru durumu
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  detailsJson String?
+
+  @@index([userId])
+  @@map("team_applications")
+}
+
+// 2. Destekli Öneriler için model
+model SupportSuggestion {
+  id              Int      @id @default(autoincrement())
+  gameTitle       String   // Önerilen oyunun adı
+  
+  userId          Int?     // Öneriyi yapan kullanıcı (giriş yapmışsa)
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  supporterName   String   // Destekçinin adı (giriş yapmamış olabilir)
+  supportAmount   Float    // Destek miktarı
+  
+  paymentProvider String   // Örn: "Bynogame", "Shopier"
+  transactionId   String?  @unique // Ödeme platformundan gelen işlem ID'si
+  
+  status          String   @default("completed") // Örn: "completed", "refunded"
+  
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@map("support_suggestions")
+}
+
+// 3. İndirme Takibi için model
+model DownloadLog {
+  id          Int      @id @default(autoincrement())
+  
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  projectId   Int
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  downloadedAt DateTime @default(now())
+  ipAddress   String?  // İsteğe bağlı, güvenlik için loglanabilir
+
+  @@index([userId])
+  @@index([projectId])
+  @@map("download_logs")
 }
 
 // ------------------------------------------

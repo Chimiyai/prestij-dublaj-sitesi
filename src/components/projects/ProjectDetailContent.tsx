@@ -71,7 +71,7 @@ export default function ProjectDetailContent({
 
     try {
       // YENİ API ROTASINI ÇAĞIR
-      const response = await fetch('/api/payment/shopier', {
+      const response = await fetch('/api/payment/create-session/shopier', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId: project.id }),

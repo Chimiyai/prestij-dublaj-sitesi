@@ -14,7 +14,7 @@ export async function GET(
   // VEYA: context: { params: { slug: string } } // Doğrudan tip belirt
 ) {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'admin') {
+  if (session?.user?.role !== 'ADMIN') {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 

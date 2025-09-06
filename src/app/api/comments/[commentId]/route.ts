@@ -51,7 +51,7 @@ export async function DELETE(
     }
     // console.log(`API: Yorum Silme - Yorum bulundu:`, comment); // İsteğe bağlı log
 
-    if (comment.userId !== userId && userRole !== 'admin') {
+    if (comment.userId !== userId && userRole !== 'ADMIN') {
       console.log(`API: Yorum Silme - Yetkisiz silme denemesi.`);
       return NextResponse.json({ message: 'Bu yorumu silme yetkiniz yok.' }, { status: 403 });
     }

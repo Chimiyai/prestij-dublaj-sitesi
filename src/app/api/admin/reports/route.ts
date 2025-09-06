@@ -4,20 +4,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
+import { UserRole } from '@prisma/client'; // <<< 1. DEĞİŞİKLİK: UserRole enum'unu import et
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  
+  // <<< 2. DEĞİŞİKLİK: Yetki kontrolünü güncelle
+  const userRole = session?.user?.role;
+  const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.MODERATOR];
+
+  if (!userRole || !allowedRoles.includes(userRole)) {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
+  // ---------------------------------------------------
 
   try {
     const reports = await prisma.userReport.findMany({
       orderBy: {
-        createdAt: 'desc', // En yeni raporlar üstte
+        createdAt: 'desc',
       },
       include: {
-        // Raporlayan ve raporlanan kullanıcıların bilgilerini de alalım
         reporter: {
           select: { id: true, username: true },
         },

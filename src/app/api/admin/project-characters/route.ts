@@ -15,7 +15,7 @@ const createCharacterSchema = z.object({
 // POST: Yeni proje karakteri ekleme
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'admin') {
+  if (session?.user?.role !== 'ADMIN') {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 

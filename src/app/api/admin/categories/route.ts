@@ -6,23 +6,29 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import { z } from 'zod';
 import slugify from 'slugify';
+import { UserRole } from '@prisma/client'; // UserRole enum'unu import et
 
-// Kategori oluşturma için Zod şeması
 const createCategorySchema = z.object({
   name: z.string().min(2, "Kategori adı en az 2 karakter olmalıdır.").max(50),
 });
 
-// --- GET: Tüm Kategorileri Listele ---
+// --- GET: Tüm Kategorileri Listele (Admin ve Moderatör Erişebilir) ---
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  
+  // <<< GÜNCELLEME BURADA <<<
+  const userRole = session?.user?.role;
+  const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.MODERATOR]; // Moderatör eklendi
+
+  if (!userRole || !allowedRoles.includes(userRole)) {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
+  // -------------------------
 
   try {
     const categories = await prisma.category.findMany({
       orderBy: { name: 'asc' },
-      include: { _count: { select: { projects: true } } } // Her kategoride kaç proje olduğunu say
+      include: { _count: { select: { projects: true } } }
     });
     return NextResponse.json(categories);
   } catch (error) {
@@ -31,11 +37,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// --- POST: Yeni Kategori Oluştur ---
+// --- POST: Yeni Kategori Oluştur (SADECE Admin Erişebilir) ---
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
+  
+  // <<< BU KONTROL AYNI KALIYOR (SADECE ADMIN) <<<
+  if (!session || session.user.role !== UserRole.ADMIN) {
+    return NextResponse.json({ message: 'Bu işlemi yapmak için yönetici olmalısınız.' }, { status: 403 });
   }
   
   try {
@@ -49,7 +57,6 @@ export async function POST(request: NextRequest) {
     const { name } = parsedBody.data;
     const slug = slugify(name, { lower: true, strict: true });
 
-    // Aynı isimde veya slug'da kategori var mı kontrol et
     const existingCategory = await prisma.category.findFirst({
       where: { OR: [{ name }, { slug }] }
     });
@@ -61,7 +68,10 @@ export async function POST(request: NextRequest) {
       data: { name, slug }
     });
 
-    return NextResponse.json(newCategory, { status: 201 });
+    // Proje sayısını manuel olarak ekleyerek döndürelim ki arayüz hemen güncellenebilsin
+    const responseData = { ...newCategory, _count: { projects: 0 } };
+    
+    return NextResponse.json(responseData, { status: 201 });
 
   } catch (error) {
     console.error("Kategori oluşturma hatası:", error);

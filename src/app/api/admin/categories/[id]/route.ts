@@ -22,7 +22,7 @@ interface RouteContext {
 // --- PUT: Mevcut Kategoriyi Güncelle ---
 export async function PUT(request: NextRequest, { params }: RouteContext) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!session || session.user.role !== 'ADMIN') {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
   
@@ -67,7 +67,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 // --- DELETE: Kategoriyi Sil ---
 export async function DELETE(request: NextRequest, { params }: RouteContext) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!session || session.user.role !== 'ADMIN') {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 

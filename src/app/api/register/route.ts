@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         username: username,
         email: email,
         password: hashedPassword,
-        // role: 'user' // Varsayılan olduğu için gerek yok
+        // role: 'USER' // Varsayılan olduğu için gerek yok
       },
     });
 

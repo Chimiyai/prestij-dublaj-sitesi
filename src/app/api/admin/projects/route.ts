@@ -31,7 +31,7 @@ const createProjectSchema = z.object({
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ message: 'Yetkisiz erişim' }, { status: 403 });
   }
 
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
             });
 
             const allUserIds = await tx.user.findMany({
-                where: { role: 'user' }, // Sadece normal kullanıcılara bildirim gönderelim
+                where: { role: 'USER' }, // Sadece normal kullanıcılara bildirim gönderelim
                 select: { id: true },
             });
 

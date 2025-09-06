@@ -22,7 +22,7 @@ interface RouteContext {
 // --- BANLAMA İŞLEMİ ---
 export async function POST(request: NextRequest, { params }: RouteContext) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!session || session.user.role !== 'ADMIN') {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 // --- BAN KALDIRMA İŞLEMİ ---
 export async function DELETE(request: NextRequest, { params }: RouteContext) {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'admin') {
+    if (!session || session.user.role !== 'ADMIN') {
         return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
     }
 

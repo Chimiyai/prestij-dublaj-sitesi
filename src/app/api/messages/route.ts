@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     //    Eğer "herkes herkese mesaj gönderebilir" ise, alıcının varlık kontrolü yeterli.
     //    Eğer kısıtlamak istiyorsan, burada o mantığı eklemelisin.
     //    Örnek: Sadece adminlere mesaj atılabilsin (çok kısıtlı bir senaryo ama fikir vermesi için)
-    //    if (receiverExists.role !== 'admin') {
+    //    if (receiverExists.role !== 'ADMIN') {
     //        return NextResponse.json({ message: 'Bu kullanıcıya mesaj gönderemezsiniz.' }, { status: 403 });
     //    }
 

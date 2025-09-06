@@ -61,7 +61,7 @@ export async function PUT(
   { params }: { params: Promise<{ slug: string }> } // <<< ÇALIŞAN YAPI
 ) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 
@@ -235,7 +235,7 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> } // <<< ÇALIŞAN YAPI
 ) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!session || session.user.role !== 'ADMIN') {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 
@@ -268,7 +268,7 @@ export async function DELETE(
   { params }: { params: Promise<{ slug: string }> } // <<< ÇALIŞAN YAPI
 ) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!session || session.user.role !== 'ADMIN') {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 

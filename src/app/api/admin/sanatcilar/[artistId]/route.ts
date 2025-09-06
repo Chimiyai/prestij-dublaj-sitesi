@@ -57,7 +57,7 @@ export async function PUT(
   { params }: { params: Promise<{ artistId: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!session || session.user.role !== 'ADMIN') {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 
@@ -172,7 +172,7 @@ export async function DELETE(
   { params }: { params: Promise<{ artistId: string }> } // Promise olarak al
 ) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 

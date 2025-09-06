@@ -4,6 +4,7 @@
     middleware.ts
     app/
         globals.css
+        icon - Kopya.png
         icon.png
         layout.tsx
         page.tsx
@@ -106,9 +107,11 @@
                 route.ts
             payment/
                 create-session/
+                shopier/
                     route.ts
                 webhook/
-                    route.ts
+                    shopier/
+                        route.ts
             profile/
                 route.ts
                 email/
@@ -147,6 +150,8 @@
                 [userId]/
                     (actions)/
                         block/
+                            route.ts
+                        block-status/
                             route.ts
                         report/
                             route.ts

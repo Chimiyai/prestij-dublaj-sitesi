@@ -185,7 +185,7 @@ export default async function UserProfilePage(
   if (loggedInUserId !== undefined && loggedInUserId !== null) {
     isOwnProfile = loggedInUserId.toString() === user.id.toString();
   }
-  const canAdminEdit = loggedInUserRole === 'admin';
+  const canAdminEdit = loggedInUserRole === 'ADMIN';
   // const displayEditButton = isOwnProfile || canAdminEdit; // Bu değişken kullanılmıyorsa kaldırılabilir
 
   const finalBannerUrl = getCloudinaryImageUrlOptimized(

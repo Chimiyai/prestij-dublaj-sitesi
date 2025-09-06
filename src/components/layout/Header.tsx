@@ -25,6 +25,7 @@ import SearchOverlay from './SearchOverlay';
 import { cn } from '@/lib/utils';
 import { getCloudinaryImageUrlOptimized } from '@/lib/cloudinary';
 import NotificationBell from './NotificationBell';
+import { UserRole } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +40,7 @@ const navLinksData = [
   { label: 'Oyunlar', href: 'oyunlar', dropdownId: 'oyunlarDropdown' },
   { label: 'Animeler', href: 'animeler', dropdownId: 'animelerDropdown' },
   { label: 'Kadromuz', href: '/kadromuz' },
-  { label: 'Bize Katıl!', target:'_blank', href: 'https://discord.gg/9hX4GJtEsX' },
+  { label: 'Bize Katıl!', href: '/bize-katil' }, // Artık Discord linki değil, sitemizdeki başvuru sayfası.
 ];
 
 // Tip tanımlamalarını ekleyelim (isteğe bağlı ama iyi pratik)
@@ -77,6 +78,11 @@ const Header = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { data: session, status } = useSession();
   const isLoadingSession = status === "loading";
+
+  const userIsAdminOrModerator = 
+    !isLoadingSession && 
+    session?.user?.role && 
+    [UserRole.ADMIN, UserRole.MODERATOR].includes(session.user.role);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -134,9 +140,10 @@ const oyunlarDropdownContent = {
     ],
   };
 
-  const navLinks: NavLinkItem[] = [ // Tip ataması eklendi
+  const navLinks: NavLinkItem[] = [
     ...navLinksData,
-    ...(session?.user?.role === 'admin' && !isLoadingSession ? [{ label: 'Admin Paneli', href: '/admin' }] : [])
+    // <<< DEĞİŞİKLİK 3: Güncellenmiş rol kontrolünü kullanıyoruz.
+    ...(userIsAdminOrModerator ? [{ label: 'Yönetim Paneli', href: '/admin' }] : [])
   ];
 
   const openSearchOverlay = () => {
@@ -293,7 +300,7 @@ const handleDownloadClick = () => {
         href: `/profil/${session.user.username || session.user.id}?tab=library` 
     });
   }
-  if (session?.user?.role === 'admin' && !isLoadingSession) {
+  if (session?.user?.role === 'ADMIN' && !isLoadingSession) {
     navLinksForDesktop.push({ label: 'Admin Paneli', href: '/admin' });
   }
 
@@ -311,10 +318,11 @@ const handleDownloadClick = () => {
       });
     }
     mainItems.push({ label: 'Kadromuz', action: 'link', href: '/kadromuz' });
-    mainItems.push({ label: 'Bize Katıl!', action: 'link', href: 'https://discord.gg/9hX4GJtEsX' });
+    mainItems.push({ label: 'Bize Katıl!', action: 'link', href: '/bize-katil' }); // <<< DEĞİŞİKLİK 4: Mobil menü linkini de güncelliyoruz.
 
-    if (session?.user?.role === 'admin' && !isLoadingSession) {
-      mainItems.push({ label: 'Admin Paneli', action: 'link', href: '/admin' });
+    // <<< DEĞİŞİKLİK 5: Mobil menüde de güncellenmiş rol kontrolünü kullanıyoruz.
+    if (userIsAdminOrModerator) {
+      mainItems.push({ label: 'Yönetim Paneli', action: 'link', href: '/admin' });
     }
     return mainItems;
   };

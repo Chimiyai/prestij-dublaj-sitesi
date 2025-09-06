@@ -2,6 +2,7 @@
 
 const { MailWarningIcon } = require('lucide-react');
 const colors = require('tailwindcss/colors');
+const plugin = require('tailwindcss/plugin');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -412,6 +413,61 @@ module.exports = {
     require('@tailwindcss/typography'),
     require('@tailwindcss/aspect-ratio'), // Eğer banner'larda kullanacaksak
     require('tailwindcss-textshadow'), // Kullanıyorsanız
-    //require('@tailwindcss/line-clamp'),
+    plugin(function({ addComponents, theme }) {
+      addComponents({
+        // Form elemanlarımız için genel bir bileşen sınıfı
+        '.form-input': {
+          width: '100%',
+          backgroundColor: '#110E1B', // VEYA theme('colors.gray.900') gibi
+          border: '1px solid #37304F', // VEYA theme('colors.gray.700')
+          borderRadius: theme('borderRadius.lg'), // '8px' yerine tema değerini kullanmak daha iyidir
+          padding: `${theme('spacing.2')} ${theme('spacing.3')}`, // '10px 12px' yerine
+          color: theme('colors.white'),
+          transition: 'all 0.2s',
+          '&:focus': {
+            outline: 'none',
+            borderColor: '#8166FF', // VEYA theme('colors.indigo.500')
+            boxShadow: `0 0 0 3px rgba(129, 102, 255, 0.3)`,
+          },
+          '&::placeholder': {
+            color: theme('colors.gray.600'),
+          },
+          '&:disabled': {
+            opacity: '0.6',
+            cursor: 'not-allowed',
+          }
+        },
+        // Genel bir buton stili (örnek)
+        '.btn-primary': {
+          display: 'flex',
+          justifyContent: 'center',
+          width: '100%',
+          backgroundColor: theme('colors.indigo.600'),
+          color: theme('colors.white'),
+          fontWeight: theme('fontWeight.bold'),
+          padding: `${theme('spacing.3')} ${theme('spacing.4')}`,
+          borderRadius: theme('borderRadius.lg'),
+          transition: 'all 0.2s',
+          '&:hover': {
+            backgroundColor: theme('colors.indigo.700'),
+            transform: 'scale(1.05)',
+          },
+          '&:disabled': {
+            opacity: '0.6',
+            cursor: 'not-allowed',
+            transform: 'none',
+            backgroundColor: theme('colors.indigo.800'),
+          },
+        },
+        // Label'lar için bir stil (opsiyonel)
+        '.form-label': {
+            display: 'block',
+            fontSize: theme('fontSize.sm'),
+            fontWeight: theme('fontWeight.medium'),
+            color: theme('colors.gray.400'),
+            marginBottom: theme('spacing.1'),
+        }
+      })
+    })
   ],
 };

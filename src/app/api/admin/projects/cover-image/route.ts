@@ -26,7 +26,7 @@ const generateUniqueFilename = (originalName: string, identifier?: string | null
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user?.role !== 'admin') {
+  if (!session || session.user?.role !== 'ADMIN') {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 }); // 403 Forbidden daha uygun
   }
 

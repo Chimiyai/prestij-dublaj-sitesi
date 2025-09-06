@@ -192,9 +192,9 @@ export default function UserProfileForm({ user: initialUser }: UserProfileFormPr
                 <p className="text-md text-gray-600 dark:text-gray-400">{initialUser.email}</p>
                 <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{initialUser.bio}</p>
                 <span className={`mt-2 inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium ${
-                    initialUser.role === 'admin' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                    initialUser.role === 'ADMIN' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
                 }`}>
-                    {initialUser.role === 'admin' ? 'Admin' : 'Kullanıcı'}
+                    {initialUser.role === 'ADMIN' ? 'Admin' : 'Kullanıcı'}
                 </span>
             </div>
 

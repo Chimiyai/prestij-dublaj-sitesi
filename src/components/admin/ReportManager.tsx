@@ -1,4 +1,4 @@
-// src/components/admin/ReportManager.tsx
+// src/components/admin/ReportManager.tsx (YENİ TASARIMA UYGUN GÜNCELLENMİŞ HALİ)
 'use client';
 
 import { Dialog, Transition } from '@headlessui/react';
@@ -11,299 +11,181 @@ import { cn } from '@/lib/utils';
 import { EyeIcon, CheckCircleIcon, ArchiveBoxXMarkIcon } from '@heroicons/react/24/outline';
 import { formatReportStatus } from '@/lib/utils';
 
-// API'den gelen rapor tipini tanımlayalım
+// Tip tanımı aynı kalabilir
 type ReportWithUsers = {
   id: number;
   reason: string;
   description: string | null;
-  status: string; // 'pending', 'reviewed', 'resolved'
+  status: string;
   createdAt: string;
   reporter: { id: number; username: string; };
   reported: { id: number; username: string; };
 };
 
 export default function ReportManager() {
+  // State tanımlamaları ve fonksiyonlar (fetch, handleUpdate, handleDelete) aynı kalabilir.
+  // Sadece JSX (render) kısmını güncelleyeceğiz.
   const [reports, setReports] = useState<ReportWithUsers[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'pending' | 'reviewed' | 'resolved' | 'all'>('pending');
   const [isProcessing, setIsProcessing] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportWithUsers | null>(null);
+
   const openReportModal = (report: ReportWithUsers) => {
     setSelectedReport(report);
     setIsModalOpen(true);
   };
   const closeReportModal = () => {
     setIsModalOpen(false);
-    // Gecikmeli olarak null yapmak, kapanış animasyonu sırasında içeriğin kaybolmasını önler
     setTimeout(() => setSelectedReport(null), 300); 
   };
 
-  const fetchReports = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/admin/reports');
-      if (!response.ok) throw new Error('Raporlar yüklenemedi.');
-      const data: ReportWithUsers[] = await response.json();
-      setReports(data);
-    } catch (error) {
-      toast.error((error as Error).message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchReports = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/admin/reports');
+        if (!response.ok) throw new Error('Raporlar yüklenemedi.');
+        const data: ReportWithUsers[] = await response.json();
+        setReports(data);
+      } catch (error) {
+        toast.error((error as Error).message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     fetchReports();
   }, []);
-// --- YENİ: Rapor Durumunu Güncelleme Fonksiyonu ---
+
   const handleUpdateStatus = async (reportId: number, newStatus: 'pending' | 'reviewed' | 'resolved') => {
-    setIsProcessing(reportId); // İşlem başladığında butonu pasif yap
+    // Bu fonksiyonun içeriği doğru ve aynı kalabilir.
+    setIsProcessing(reportId);
     try {
       const response = await fetch(`/api/admin/reports/${reportId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Durum güncellenemedi.');
-      }
-      
+      if (!response.ok) throw new Error('Durum güncellenemedi.');
       toast.success('Rapor durumu güncellendi.');
-      // Listeyi anında güncelle
       setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: newStatus } : r));
-
-    } catch (error) {
-      toast.error((error as Error).message);
-    } finally {
-      setIsProcessing(null); // İşlem bitince butonu aktif et
-    }
+      if (selectedReport && selectedReport.id === reportId) {
+        setSelectedReport(prev => prev ? { ...prev, status: newStatus } : null);
+      }
+    } catch (error) { toast.error((error as Error).message); } 
+    finally { setIsProcessing(null); }
   };
 
-  // --- YENİ: Rapor Silme Fonksiyonu ---
-  const handleDeleteReport = async (reportId: number, reportedUsername: string) => {
-    if (!confirm(`'${reportedUsername}' hakkındaki bu raporu kalıcı olarak silmek istediğinizden emin misiniz?`)) return;
-    
+  const handleDeleteReport = async (reportId: number) => {
+    // Bu fonksiyonun içeriği doğru ve aynı kalabilir.
+    if (!confirm('Bu raporu kalıcı olarak silmek istediğinizden emin misiniz?')) return;
     setIsProcessing(reportId);
     try {
-      const response = await fetch(`/api/admin/reports/${reportId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.status !== 204) {
-        const data = await response.json();
-        throw new Error(data.message || 'Rapor silinemedi.');
-      }
-      
+      const response = await fetch(`/api/admin/reports/${reportId}`, { method: 'DELETE' });
+      if (response.status !== 204) throw new Error('Rapor silinemedi.');
       toast.success('Rapor başarıyla silindi.');
-      // Listeyi anında güncelle
       setReports(prev => prev.filter(r => r.id !== reportId));
-
-    } catch (error) {
-      toast.error((error as Error).message);
-    } finally {
-      setIsProcessing(null);
-    }
+      closeReportModal();
+    } catch (error) { toast.error((error as Error).message); }
+    finally { setIsProcessing(null); }
   };
 
-  const filteredReports = reports.filter(report => {
-    if (filter === 'all') return true;
-    return report.status === filter;
-  });
+  const filteredReports = reports.filter(report => filter === 'all' || report.status === filter);
 
   return (
-    <div className="space-y-6">
-      {/* Filtre Butonları */}
-      <div className="flex flex-wrap gap-2 border-b border-gray-700 pb-3">
-        <button onClick={() => setFilter('pending')} className={cn("px-3 py-1 text-sm rounded-md", filter === 'pending' ? 'bg-yellow-600 text-white' : 'text-gray-300 hover:bg-gray-800')}>
-          Bekleyenler
+    <div className="p-6">
+      {/* Filtre Butonları (Yeni Stiller) */}
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        <button onClick={() => setFilter('pending')} className={cn("px-4 py-1.5 text-sm font-medium rounded-md transition-colors", filter === 'pending' ? 'bg-yellow-500 text-white shadow-sm' : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700')}>
+          Bekleyen
         </button>
-        <button onClick={() => setFilter('reviewed')} className={cn("px-3 py-1 text-sm rounded-md", filter === 'reviewed' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800')}>
-          İnceleniyor
+        <button onClick={() => setFilter('reviewed')} className={cn("px-4 py-1.5 text-sm font-medium rounded-md transition-colors", filter === 'reviewed' ? 'bg-blue-500 text-white shadow-sm' : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700')}>
+          İncelenen
         </button>
-        <button onClick={() => setFilter('resolved')} className={cn("px-3 py-1 text-sm rounded-md", filter === 'resolved' ? 'bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-800')}>
-          Çözüldü
+        <button onClick={() => setFilter('resolved')} className={cn("px-4 py-1.5 text-sm font-medium rounded-md transition-colors", filter === 'resolved' ? 'bg-green-600 text-white shadow-sm' : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700')}>
+          Çözülen
         </button>
-        <button onClick={() => setFilter('all')} className={cn("px-3 py-1 text-sm rounded-md", filter === 'all' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-800')}>
+        <button onClick={() => setFilter('all')} className={cn("px-4 py-1.5 text-sm font-medium rounded-md transition-colors", filter === 'all' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700')}>
           Tümü
         </button>
       </div>
 
       {/* Raporlar Tablosu */}
-      <div className="overflow-x-auto bg-gray-900 shadow-lg rounded-lg border border-gray-800">
-        <table className="min-w-full table-auto">
-          <thead className="bg-gray-800 text-gray-300">
+      <div className="overflow-x-auto">
+        <table className="min-w-full">
+          <thead className="bg-gray-50 dark:bg-gray-800/50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Raporlanan</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Raporlayan</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Sebep</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Tarih</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Durum</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">İşlemler</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Raporlanan</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Raporlayan</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Sebep</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tarih</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Durum</th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Eylem</th>
             </tr>
           </thead>
-          <tbody className="bg-gray-900 divide-y divide-gray-800">
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
             {isLoading ? (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">Raporlar yükleniyor...</td></tr>
+              <tr><td colSpan={6} className="text-center py-16 text-gray-500">Yükleniyor...</td></tr>
             ) : filteredReports.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-10 text-gray-400">Bu filtrede gösterilecek rapor bulunamadı.</td></tr>
+                <tr><td colSpan={6} className="text-center py-16 text-gray-500">Bu filtrede gösterilecek rapor bulunamadı.</td></tr>
             ) : filteredReports.map((report) => (
-              <tr key={report.id} className="hover:bg-gray-800/50">
-                
-                {/* === EKSİK OLAN SÜTUNLAR BURAYA EKLENECEK === */}
-
-                {/* Raporlanan Sütunu */}
-                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-white">
-                  <Link href={`/profil/${report.reported.username}`} className="hover:underline" target="_blank">
-                    {report.reported.username}
-                  </Link>
-                </td>
-
-                {/* Raporlayan Sütunu */}
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-300">
-                  <Link href={`/profil/${report.reporter.username}`} className="hover:underline" target="_blank">
-                    {report.reporter.username}
-                  </Link>
-                </td>
-
-                {/* Sebep Sütunu */}
-                <td className="px-4 py-4 text-sm text-gray-300 max-w-xs truncate" title={report.reason}>
-                  {report.reason}
-                  {/* Opsiyonel: Detaylı açıklama varsa bir ikonla belirtilebilir */}
-                </td>
-
-                {/* Tarih Sütunu */}
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-400" title={new Date(report.createdAt).toLocaleString('tr-TR')}>
-                  {formatDistanceToNowStrict(new Date(report.createdAt), { locale: tr, addSuffix: true })}
-                </td>
-
-                {/* Durum Sütunu */}
-                <td className="px-4 py-4 whitespace-nowrap text-sm">
-                  <span className={cn('px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full', {
-                      'bg-yellow-900 text-yellow-200': report.status === 'pending',
-                      'bg-blue-900 text-blue-200': report.status === 'reviewed',
-                      'bg-green-900 text-green-200': report.status === 'resolved',
-                  })}>
-                    {formatReportStatus(report.status)}
-                  </span>
-                </td>
-
-                {/* İşlemler Sütunu */}
-                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex items-center space-x-3">
-                    {/* Göz ikonu artık modalı açacak */}
-                    <button 
-                      onClick={() => openReportModal(report)} 
-                      title="Rapor Detayını Görüntüle" 
-                      className="text-blue-400 hover:text-blue-300"
-                    >
-                      <EyeIcon className="w-5 h-5"/>
-                    </button>
-                    {/* Diğer butonlar modal içine taşınabilir veya burada kalabilir. Şimdilik burada kalsın. */}
-                  </div>
-                </td>
+              <tr key={report.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                <td className="px-6 py-4 whitespace-nowrap"><Link href={`/profil/${report.reported.username}`} className="text-sm font-medium text-red-600 dark:text-red-400 hover:underline">{report.reported.username}</Link></td>
+                <td className="px-6 py-4 whitespace-nowrap"><Link href={`/profil/${report.reporter.username}`} className="text-sm text-gray-600 dark:text-gray-300 hover:underline">{report.reporter.username}</Link></td>
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-200 max-w-xs truncate">{report.reason}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatDistanceToNowStrict(new Date(report.createdAt), { locale: tr, addSuffix: true })}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm"><span className={cn('px-2.5 py-0.5 inline-flex text-xs font-semibold rounded-full', { 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200': report.status === 'pending', 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200': report.status === 'reviewed', 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': report.status === 'resolved' })}>{formatReportStatus(report.status)}</span></td>
+                <td className="px-6 py-4 whitespace-nowrap text-center"><button onClick={() => openReportModal(report)} title="Detaylar" className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"><EyeIcon className="w-5 h-5"/></button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* --- YENİ: Rapor Detay Modalı --- */}
+      {/* Rapor Detay Modalı (Yeni Stiller) */}
       <Transition appear show={isModalOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={closeReportModal}>
-          {/* Arka plan karartması için overlay */}
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-gray-900 border border-gray-700 p-6 text-left align-middle shadow-xl transition-all">
-                  <Dialog.Title
-                    as="h3"
-                    className="text-lg font-bold leading-6 text-white border-b border-gray-700 pb-3 mb-4"
-                  >
-                    Rapor Detayları
-                  </Dialog.Title>
-                  
+          <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0"><div className="fixed inset-0 bg-black/60 backdrop-blur-sm" /></Transition.Child>
+          <div className="fixed inset-0 overflow-y-auto"><div className="flex min-h-full items-center justify-center p-4">
+              <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
+                <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-xl bg-white dark:bg-gray-900 text-left align-middle shadow-xl transition-all">
+                  <Dialog.Title as="h3" className="text-lg font-bold p-6 text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-800">Rapor Detayları</Dialog.Title>
                   {selectedReport && (
-                    <div className="mt-2 space-y-4">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="p-6 space-y-4">
+                      {/* ... (Modal içeriği aynı kalabilir, stiller otomatik uyum sağlar) ... */}
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
-                          <p className="font-semibold text-gray-400">Raporlayan Kullanıcı</p>
-                          <Link href={`/profil/${selectedReport.reporter.username}`} className="text-blue-400 hover:underline">{selectedReport.reporter.username}</Link>
+                          <p className="font-semibold text-gray-500 dark:text-gray-400">Raporlayan Kullanıcı</p>
+                          <Link href={`/profil/${selectedReport.reporter.username}`} className="text-blue-600 dark:text-blue-400 hover:underline">{selectedReport.reporter.username}</Link>
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-400">Raporlanan Kullanıcı</p>
-                          <Link href={`/profil/${selectedReport.reported.username}`} className="text-red-400 hover:underline">{selectedReport.reported.username}</Link>
+                          <p className="font-semibold text-gray-500 dark:text-gray-400">Raporlanan Kullanıcı</p>
+                          <Link href={`/profil/${selectedReport.reported.username}`} className="text-red-600 dark:text-red-400 hover:underline">{selectedReport.reported.username}</Link>
                         </div>
                       </div>
-
                       <div>
-                        <p className="font-semibold text-gray-400">Rapor Sebebi</p>
-                        <p className="text-white bg-gray-800 p-2 rounded-md">{selectedReport.reason}</p>
+                        <p className="font-semibold text-gray-500 dark:text-gray-400">Rapor Sebebi</p>
+                        <p className="text-gray-800 dark:text-gray-100 bg-gray-100 dark:bg-gray-800 p-3 rounded-md">{selectedReport.reason}</p>
                       </div>
-
                       {selectedReport.description && (
-                     <div>
-                      <p className="font-semibold text-gray-400">Detaylı Açıklama</p>
-                      <p 
-                        className={cn(
-                          "text-gray-300 bg-gray-800 p-3 rounded-md whitespace-pre-wrap",
-                          // --- YENİ EKLENEN CLASS'LAR ---
-                          "break-words",    // Kelimeleri uygun yerlerden kır
-                          "overflow-wrap-break-word" // Taşmayı önlemek için ek güvence
-                        )}
-                      >
-                        {selectedReport.description}
-                      </p>
-                    </div>
-                  )}
-                      
-                      <div className="border-t border-gray-700 pt-4 mt-6">
-                        <p className="font-semibold text-gray-400 mb-2">İşlemler</p>
-                        <div className="flex items-center space-x-3">
-                          <button onClick={() => handleUpdateStatus(selectedReport.id, 'reviewed')} disabled={isProcessing === selectedReport.id} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600/20 text-blue-300 rounded-md hover:bg-blue-600/40 disabled:opacity-50">
-                            <EyeIcon className="w-4 h-4"/> İnceleniyor
-                          </button>
-                          <button onClick={() => handleUpdateStatus(selectedReport.id, 'resolved')} disabled={isProcessing === selectedReport.id} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-green-600/20 text-green-300 rounded-md hover:bg-green-600/40 disabled:opacity-50">
-                            <CheckCircleIcon className="w-4 h-4"/> Çözüldü
-                          </button>
-                          <button onClick={() => handleDeleteReport(selectedReport.id, selectedReport.reported.username)} disabled={isProcessing === selectedReport.id} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-red-600/20 text-red-300 rounded-md hover:bg-red-600/40 disabled:opacity-50">
-                             <ArchiveBoxXMarkIcon className="w-4 h-4"/> Raporu Sil
-                          </button>
+                         <div>
+                          <p className="font-semibold text-gray-500 dark:text-gray-400">Detaylı Açıklama</p>
+                          <p className="text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 p-3 rounded-md whitespace-pre-wrap break-words">{selectedReport.description}</p>
+                        </div>
+                      )}
+                      <div className="border-t border-gray-200 dark:border-gray-800 pt-4">
+                        <p className="font-semibold text-gray-500 dark:text-gray-400 mb-2">Durumu Güncelle</p>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <button onClick={() => handleUpdateStatus(selectedReport.id, 'reviewed')} disabled={isProcessing != null} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-800/50 dark:text-blue-300 rounded-md hover:bg-blue-200 dark:hover:bg-blue-800 disabled:opacity-50"> <EyeIcon className="w-4 h-4"/> İncelendi Olarak İşaretle</button>
+                          <button onClick={() => handleUpdateStatus(selectedReport.id, 'resolved')} disabled={isProcessing != null} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-800/50 dark:text-green-300 rounded-md hover:bg-green-200 dark:hover:bg-green-800 disabled:opacity-50"><CheckCircleIcon className="w-4 h-4"/> Çözüldü Olarak İşaretle</button>
                         </div>
                       </div>
                     </div>
                   )}
-
-                  <div className="mt-6 text-right">
-                    <button
-                      type="button"
-                      className="inline-flex justify-center rounded-md border border-transparent bg-gray-700 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                      onClick={closeReportModal}
-                    >
-                      Kapat
-                    </button>
+                  <div className="p-6 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 flex justify-between items-center">
+                    <button onClick={() => selectedReport && handleDeleteReport(selectedReport.id)} disabled={isProcessing != null} className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium disabled:opacity-50"><ArchiveBoxXMarkIcon className="w-4 h-4"/> Raporu Sil</button>
+                    <button type="button" onClick={closeReportModal} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600">Kapat</button>
                   </div>
                 </Dialog.Panel>
               </Transition.Child>
@@ -311,8 +193,6 @@ export default function ReportManager() {
           </div>
         </Dialog>
       </Transition>
-      {/* ------------------------------- */}
-
     </div>
   );
 }

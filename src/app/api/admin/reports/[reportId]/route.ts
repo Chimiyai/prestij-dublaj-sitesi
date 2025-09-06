@@ -5,31 +5,36 @@ import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import { z } from 'zod';
+import { UserRole } from '@prisma/client'; // <<< 1. DEĞİŞİKLİK: UserRole enum'unu import et
 
-// Rapor durumunu güncellemek için Zod şeması
 const updateReportStatusSchema = z.object({
-  status: z.enum(['pending', 'reviewed', 'resolved'], {
-    errorMap: () => ({ message: "Geçersiz durum değeri. Sadece 'pending', 'reviewed', veya 'resolved' olabilir." }),
-  }),
+  status: z.enum(['pending', 'reviewed', 'resolved']),
 });
 
-interface RouteContext {
-  params: {
-    reportId: string;
-  };
+// Yetki kontrolünü merkezi bir fonksiyon haline getirelim
+async function checkAuth(): Promise<NextResponse | null> {
+  const session = await getServerSession(authOptions);
+  const userRole = session?.user?.role;
+  const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.MODERATOR];
+
+  if (!userRole || !allowedRoles.includes(userRole)) {
+    return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
+  }
+  return null; // Yetki varsa null dön
 }
+
 
 // --- PUT: Raporun Durumunu Güncelle ---
 export async function PUT(
   request: NextRequest, 
-  { params }: { params: Promise<{ reportId: string }> } // <<< İMZAYI GÜNCELLE
+  { params }: { params: { reportId: string } }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
-  }
-  const resolvedParams = await params;
-  const reportId = parseInt(resolvedParams.reportId, 10);
+  // <<< 2. DEĞİŞİKLİK: Merkezi yetki kontrol fonksiyonunu kullan
+  const authError = await checkAuth();
+  if (authError) return authError;
+  // -----------------------------------------------------------
+  
+  const reportId = parseInt(params.reportId, 10);
   if (isNaN(reportId)) {
     return NextResponse.json({ message: 'Geçersiz ID formatı.' }, { status: 400 });
   }
@@ -42,11 +47,9 @@ export async function PUT(
       return NextResponse.json({ errors: parsedBody.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const { status } = parsedBody.data;
-
     const updatedReport = await prisma.userReport.update({
       where: { id: reportId },
-      data: { status: status },
+      data: { status: parsedBody.data.status },
     });
 
     return NextResponse.json(updatedReport);
@@ -59,25 +62,21 @@ export async function PUT(
 // --- DELETE: Raporu Sil ---
 export async function DELETE(
   request: NextRequest, 
-  { params }: { params: Promise<{ reportId: string }> } // <<< İMZAYI GÜNCELLE
+  { params }: { params: { reportId: string } }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
-  }
+  // <<< 3. DEĞİŞİKLİK: Merkezi yetki kontrol fonksiyonunu kullan
+  const authError = await checkAuth();
+  if (authError) return authError;
+  // -----------------------------------------------------------
 
-  const resolvedParams = await params; // `await` ile çöz
-  const reportId = parseInt(resolvedParams.reportId, 10);
+  const reportId = parseInt(params.reportId, 10);
   if (isNaN(reportId)) {
     return NextResponse.json({ message: 'Geçersiz ID formatı.' }, { status: 400 });
   }
 
   try {
-    await prisma.userReport.delete({
-      where: { id: reportId },
-    });
-
-    return new NextResponse(null, { status: 204 }); // Başarılı, içerik yok
+    await prisma.userReport.delete({ where: { id: reportId } });
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error(`Rapor (ID: ${reportId}) silinirken hata:`, error);
     return NextResponse.json({ message: "Rapor silinirken bir hata oluştu." }, { status: 500 });

@@ -6,8 +6,8 @@ import { authOptions } from '@/lib/authOptions';
 import { z } from 'zod';
 
 const updateUserRoleSchema = z.object({
-  role: z.enum(['user', 'admin'], {
-    errorMap: () => ({ message: "Rol 'user' veya 'admin' olmalıdır." }),
+  role: z.enum(['USER', 'ADMIN'], {
+    errorMap: () => ({ message: "Rol 'USER' veya 'ADMIN' olmalıdır." }),
   }),
 });
 
@@ -16,7 +16,7 @@ export async function PATCH(
   { params }: { params: Promise<{ userId: string }> } // params'ı Promise olarak al
 ) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!session || session.user.role !== 'ADMIN') {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 
@@ -39,7 +39,7 @@ export async function PATCH(
     );
   }
 
-  let newRole: 'user' | 'admin';
+  let newRole: 'USER' | 'ADMIN';
   try {
     const body = await request.json();
     const parsedBody = updateUserRoleSchema.safeParse(body);
@@ -84,7 +84,7 @@ export async function DELETE(
   { params }: { params: Promise<{ userId: string }> } // params'ı Promise olarak al
 ) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!session || session.user.role !== 'ADMIN') {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 

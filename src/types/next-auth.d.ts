@@ -15,7 +15,7 @@ declare module 'next-auth' {
       banExpiresAt: Date | string | null; // Hem Date hem string olabileceğini belirtelim
       profileImagePublicId: string | null;
       bannerImagePublicId: string | null;
-    } & DefaultSession['user'];
+    } & DefaultSession['USER'];
   }
 
   interface User {

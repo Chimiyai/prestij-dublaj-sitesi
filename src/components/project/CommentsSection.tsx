@@ -46,7 +46,7 @@ function CommentItem({ comment, onDelete, currentUserId, currentUserRole }: {
   currentUserId: number | undefined;
   currentUserRole: string | undefined;
 }) {
-  const canDelete = currentUserId === comment.user.id || currentUserRole === 'admin';
+  const canDelete = currentUserId === comment.user.id || currentUserRole === 'ADMIN' || currentUserRole === 'MODERATOR';
   const avatarUrl = comment.user.profileImagePublicId
     ? getCloudinaryImageUrlOptimized(comment.user.profileImagePublicId, { width: 40, height: 40, crop: 'fill', gravity: 'face' }, 'avatar')
     : null;

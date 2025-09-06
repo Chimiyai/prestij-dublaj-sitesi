@@ -1,10 +1,10 @@
-// src/app/api/payment/create-session/shopier/route.ts
+// src/app/api/payment/create-session/shopier/route.ts (DÜZELTİLMİŞ HALİ)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import prisma from '@/lib/prisma';
-import { Shopier } from 'shopier-api'; // <<< DEĞİŞİKLİK: Doğru paketi import et
+import { Shopier } from 'shopier-api';
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -25,16 +25,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Satın alınabilir bir ürün bulunamadı.' }, { status: 404 });
     }
 
-    // `shopier-api` paketini başlat
     const shopier = new Shopier(
         process.env.SHOPIER_API_KEY!,
         process.env.SHOPIER_API_SECRET!
     );
 
+    // Bu ID, webhook'ta satın almayı tanımlamak için kullanılacak
     const platformOrderId = `PRESTIJ-${projectId}-${user.id}-${Date.now()}`;
     
-    // 1. Alıcı bilgilerini ayarla
     shopier.setBuyer({
+      platform_order_id: platformOrderId,
       buyer_id_nr: user.id,
       product_name: project.title,
       buyer_name: user.username,
@@ -43,7 +43,6 @@ export async function POST(request: NextRequest) {
       buyer_phone: '5555555555'
     });
 
-    // 2. Fatura adresini ayarla
     shopier.setOrderBilling({
       billing_address: "Adres Gerekli Değil",
       billing_city: "Istanbul",
@@ -51,7 +50,6 @@ export async function POST(request: NextRequest) {
       billing_postcode: "34000"
     });
 
-    // 3. Kargo adresini ayarla
     shopier.setOrderShipping({
       shipping_address: "Adres Gerekli Değil",
       shipping_city: "Istanbul",
@@ -59,7 +57,8 @@ export async function POST(request: NextRequest) {
       shipping_postcode: "34000"
     });
 
-    // 4. Ödeme formu HTML'i oluştur
+    // --- BURASI DÜZELTİLDİ ---
+    // platformOrderId'ı generatePaymentHTML fonksiyonuna ilk parametre olarak ekledik.
     const paymentHTML = shopier.generatePaymentHTML(project.price);
 
     return NextResponse.json({ paymentHTML });
