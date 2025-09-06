@@ -5,10 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { UserRole } from '@prisma/client';
-import { 
-  LayoutDashboard, Users, Library, Mic2, LayoutGrid, 
-  ShieldAlert, Handshake, BarChart3 
-} from 'lucide-react';
+import { LayoutDashboard, Users, Library, Mic2, LayoutGrid, ShieldAlert, Handshake, BarChart3, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const sidebarLinks = [
@@ -17,6 +14,7 @@ const sidebarLinks = [
   { href: "/admin/sanatcilar", label: "Sanatçılar", icon: Mic2, allowedRoles: [UserRole.ADMIN, UserRole.MODERATOR] },
   { href: "/admin/raporlar", label: "Raporlar", icon: ShieldAlert, allowedRoles: [UserRole.ADMIN, UserRole.MODERATOR] },
   { href: "/admin/basvurular", label: "Başvurular", icon: Handshake, allowedRoles: [UserRole.ADMIN, UserRole.MODERATOR] },
+  { href: "/admin/oneriler", label: "Öneriler", icon: Lightbulb, allowedRoles: [UserRole.ADMIN, UserRole.MODERATOR] },
   // Admin'e özel linkler
   { href: "/admin/kullanicilar", label: "Kullanıcılar", icon: Users, allowedRoles: [UserRole.ADMIN] },
   { href: "/admin/kategoriler", label: "Kategoriler", icon: LayoutGrid, allowedRoles: [UserRole.ADMIN] },

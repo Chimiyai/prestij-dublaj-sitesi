@@ -28,6 +28,19 @@ enum ApplicationStatus {
   REJECTED
 }
 
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum SuggestionStatus {
+  ACTIVE
+  IN_PROGRESS // Üzerinde çalışılıyor
+  COMPLETED   // Tamamlandı
+  ARCHIVED    // Arşivlendi
+}
 
 // -------------------
 
@@ -141,6 +154,9 @@ model User {
   downloadLogs           DownloadLog[]
 
   artistProfile   DubbingArtist? @relation("UserToArtistProfile")
+
+  submittedSuggestions CommunitySuggestion[]     @relation("SubmittedSuggestions")
+  votes                CommunitySuggestionVote[]
 
   @@map("users")
 }
@@ -545,6 +561,8 @@ model TeamApplication {
 model SupportSuggestion {
   id              Int      @id @default(autoincrement())
   gameTitle       String   // Önerilen oyunun adı
+  steamUrl        String?  // Steam sayfası linki (opsiyonel)
+  notes           String?  // Kullanıcının ek notları (opsiyonel)
   
   userId          Int?     // Öneriyi yapan kullanıcı (giriş yapmışsa)
   user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -552,16 +570,53 @@ model SupportSuggestion {
   supporterName   String   // Destekçinin adı (giriş yapmamış olabilir)
   supportAmount   Float    // Destek miktarı
   
-  paymentProvider String   // Örn: "Bynogame", "Shopier"
+  paymentProvider String   // Örn: "Bynogame"
   transactionId   String?  @unique // Ödeme platformundan gelen işlem ID'si
   
-  status          String   @default("completed") // Örn: "completed", "refunded"
+  status          PaymentStatus @default(PENDING) // Artık bir enum kullanıyoruz
   
   createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([userId])
   @@map("support_suggestions")
 }
+
+// Ana öneri tablosu
+model CommunitySuggestion {
+  id        Int      @id @default(autoincrement())
+  gameTitle String
+  steamUrl  String   @unique
+  
+  // Öneriyi ilk yapan kullanıcı
+  submittedById Int
+  submittedBy   User     @relation("SubmittedSuggestions", fields: [submittedById], references: [id])
+  
+  status    SuggestionStatus @default(ACTIVE)
+  createdAt DateTime         @default(now())
+
+  // Bu öneriye verilen oylarla ilişki (bire-çok)
+  votes CommunitySuggestionVote[]
+
+  @@index([submittedById])
+  @@map("community_suggestions")
+}
+
+// Hangi kullanıcının hangi öneriye oy verdiğini tutan ara tablo
+model CommunitySuggestionVote {
+  userId       Int
+  suggestionId Int
+  
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  suggestion CommunitySuggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+
+  @@id([userId, suggestionId]) // Bir kullanıcı bir öneriye sadece bir kez oy verebilir
+  @@index([suggestionId])
+  @@map("community_suggestion_votes")
+}
+
 
 // 3. İndirme Takibi için model
 model DownloadLog {
