@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import ProjectDetailContent from '@/components/projects/ProjectDetailContent'; // YENİ Client Component
 import { RoleInProject } from '@prisma/client';
+import { getCloudinaryImageUrlOptimized } from '@/lib/cloudinary';
 
 // ProjectDataForDetail tipi burada veya types dosyasında olabilir
 export interface ProjectDataForDetail {
@@ -107,35 +108,38 @@ async function getUserSpecificData(userId: number | undefined, projectId: number
 }
 
 
-// --- 1. DEĞİŞİKLİK: generateMetadata Fonksiyonu ---
-export async function generateMetadata(
-  // Tipi { params: { slug: string } } yerine { params: Promise<{ slug: string }> } olarak değiştiriyoruz.
-  { params }: { params: Promise<{ slug: string }> }
-): Promise<Metadata> {
-  const resolvedParams = await params; // `await` ile çöz
-  const slug = resolvedParams.slug;
-  
-  const project = await getProjectDetails(slug);
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const project = await prisma.project.findUnique({
+    where: { slug: params.slug },
+    include: { categories: { select: { category: { select: { name: true } } } } }
+  });
   if (!project) return { title: 'Proje Bulunamadı' };
 
-  const typeTR = project.type === 'oyun' ? 'Oyun' : 'Anime';
+  const title = `${project.title} | Türkçe Dublaj Projesi`;
+  const description = project.description?.substring(0, 160) || `${project.title} için PrestiJ tarafından hazırlanan Türkçe dublaj projesi.`;
+  const ogImageUrl = getCloudinaryImageUrlOptimized(project.coverImagePublicId, { width: 1200, height: 630, crop: 'fill', gravity: 'face' });
+  const keywords = ['Türkçe Dublaj', 'Türkçe Yama', project.title, ...project.categories.map(c => c.category.name)];
+
   return {
-    title: `${project.title} Türkçe Dublaj ${typeTR} | PrestiJ Studio`,
-    description: project.description?.substring(0, 160) || `PrestiJ Studio tarafından Türkçe dublajı yapılan ${project.title} projesini keşfedin.`,
+    title, description, keywords,
+    openGraph: {
+      title, description,
+      url: `https://www.prestijstudio.com/projeler/${project.slug}`, // <<< KENDİ DOMAIN ADINIZI KULLANIN
+      siteName: 'PrestiJ',
+      images: [{ url: ogImageUrl || 'https://www.prestijstudio.com/images/default-og.jpg', width: 1200, height: 630 }], // <<< VARSAYILAN RESİM YOLUNU AYARLAYIN
+      locale: 'tr_TR', type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image', title, description,
+      images: [ogImageUrl || 'https://www.prestijstudio.com/images/default-og.jpg'], // <<< VARSAYILAN RESİM YOLUNU AYARLAYIN
+    },
   };
 }
 
 
-// --- 2. DEĞİŞİKLİK: Ana Sayfa Component'i ---
-export default async function ProjectDetailPageServer(
-  // Tipi burada da değiştiriyoruz.
-  { params }: { params: Promise<{ slug: string }> }
-) {
-  const resolvedParams = await params; // `await` ile çöz
-  const pageSlug = resolvedParams.slug;
-
+export default async function ProjectDetailPageServer({ params }: { params: { slug: string } }) {
   const session = await getServerSession(authOptions);
-  const project = await getProjectDetails(pageSlug);
+  const project = await getProjectDetails(params.slug);
 
   if (!project) {
     notFound();
@@ -143,13 +147,51 @@ export default async function ProjectDetailPageServer(
 
   const userId = session?.user?.id ? parseInt(session.user.id) : undefined;
   const { userHasGame, userInitialInteraction } = await getUserSpecificData(userId, project.id);
+  
+  // <<< YAPISAL VERİ İÇİN GEREKLİ DEĞİŞKENLERİ BURADA OLUŞTURUYORUZ <<<
+  const ogImageUrl = getCloudinaryImageUrlOptimized(project.coverImagePublicId, {
+    width: 1200, height: 630, crop: 'fill', gravity: 'face'
+  });
+
+  const projectJsonLd = {
+      "@context": "https://schema.org",
+      "@type": project.type === 'oyun' ? "VideoGame" : "Movie", // Proje tipine göre dinamik
+      "name": project.title,
+      "description": project.description?.substring(0, 5000), // Max 5000 karakter
+      "image": ogImageUrl,
+      "author": {
+        "@type": "Organization",
+        "name": "PrestiJ"
+      },
+      // Eğer yayın tarihi varsa ekleyelim
+      ...(project.releaseDate && { "datePublished": new Date(project.releaseDate).toISOString() }),
+      // Eğer puanlama varsa ekleyelim
+      ...(project.averageRating && project._count.ratings && project._count.ratings > 0 && {
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": project.averageRating.toFixed(1),
+            "reviewCount": project._count.ratings
+          }
+      })
+  };
+  // ----------------------------------------------------------------------
 
   return (
-    <ProjectDetailContent
-      project={project}
-      isUserLoggedIn={!!session?.user?.id}
-      userHasGame={project.type === 'oyun' ? userHasGame : false}
-      userInitialInteraction={userInitialInteraction}
-    />
+    // <<< SAYFA İÇERİĞİNİ VE SCRIPT'İ BİR FRAGMENT İÇİNE ALIYORUZ <<<
+    <>
+      <ProjectDetailContent
+        project={project}
+        isUserLoggedIn={!!session?.user?.id}
+        userHasGame={project.type === 'oyun' ? userHasGame : false}
+        userInitialInteraction={userInitialInteraction}
+      />
+      
+      {/* Yapısal Veri Script'i Artık Fonksiyonun İçinde ve Değişkenlere Erişebiliyor */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(projectJsonLd) }}
+      />
+    </>
+    // --------------------------------------------------------------------
   );
 }

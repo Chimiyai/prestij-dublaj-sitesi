@@ -12,8 +12,19 @@ import { cn } from '@/lib/utils';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Kadromuz | PrestiJ',
-  description: 'PrestiJ projelerine hayat veren yetenekli seslendirme sanatçılarımız, çevirmenlerimiz ve tüm değerli üyelerimiz.',
+  title: 'Kadromuz | PrestiJ Ekibi',
+  description: 'PrestiJ projelerine hayat veren yetenekli seslendirme sanatçıları, çevirmenler ve tüm değerli ekip üyelerimizle tanışın.',
+  openGraph: {
+    title: 'Kadromuz | PrestiJ Ekibi',
+    description: 'Projelerimize hayat veren yetenekli kadromuzla tanışın.',
+    url: 'https://www.prestijstudio.com/kadromuz',
+    siteName: 'PrestiJ',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Kadromuz | PrestiJ Ekibi',
+    description: 'Projelerimize hayat veren yetenekli kadromuzla tanışın.',
+  }
 };
 
 // Tipler aynı kalabilir, sadece sorguyu düzelteceğiz.

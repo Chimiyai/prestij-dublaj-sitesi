@@ -12,6 +12,7 @@ import { Metadata } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import ArtistInteractionButtons from '@/components/artists/ArtistInteractionButtons';
+import { getCloudinaryImageUrlOptimized } from '@/lib/cloudinary';
 
 // --- TİP TANIMLARI ---
 interface AssignmentWithDetailsAndProject extends Prisma.ProjectAssignmentGetPayload<{
@@ -108,20 +109,67 @@ async function getArtistDetails(artistIdParam: string, currentUserId?: number): 
 
 
 export async function generateMetadata(
-  { params }: SanatciPageServerProps // Güncellenmiş Props tipi
+  { params }: { params: { artistId: string } }
 ): Promise<Metadata> {
-  const resolvedParams = await params; // params'ı çöz
-  const artistIdString = resolvedParams.artistId;
-
-  if (!artistIdString || typeof artistIdString !== 'string' || artistIdString.trim() === "") {
-    return { title: 'Sanatçı Bulunamadı | PrestiJ Studio' };
+  const artistId = parseInt(params.artistId, 10);
+  if (isNaN(artistId)) {
+    return { title: 'Sanatçı Bulunamadı' };
   }
-  // getArtistDetails zaten string alıyor, parseInt'i orada yapıyor.
-  const artist = await getArtistDetails(artistIdString); 
-  if (!artist) return { title: 'Sanatçı Bulunamadı | PrestiJ Studio' };
+
+  // Veritabanından sadece metadata için gerekli alanları çekelim.
+  // Bu, getArtistDetails'in çektiği tüm veriyi tekrar çekmekten daha verimlidir.
+  const artist = await prisma.dubbingArtist.findUnique({
+    where: { id: artistId },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      bio: true,
+      siteRole: true,
+      imagePublicId: true,
+    }
+  });
+
+  if (!artist) {
+    return { title: 'Sanatçı Bulunamadı | PrestiJ' };
+  }
+
+  const artistName = `${artist.firstName} ${artist.lastName}`;
+  const title = `${artistName} | PrestiJ Sanatçısı`;
+  const description = artist.bio?.substring(0, 160) || `${artistName}, PrestiJ ekibinde yer alan yetenekli bir ${artist.siteRole || 'sanatçı'}. Katkıda bulunduğu projelere göz atın.`;
+
+  // Open Graph için resim URL'ini oluşturalım (örn: 1200x630px)
+  const ogImageUrl = getCloudinaryImageUrlOptimized(artist.imagePublicId, {
+    width: 1200, height: 630, crop: 'fill', gravity: 'face'
+  });
+
   return {
-    title: `${artist.firstName} ${artist.lastName} - PrestiJ Dublaj`,
-    description: artist.bio || `PrestiJ Dublaj ekibinden ${artist.firstName} ${artist.lastName}'in katkıda bulunduğu projeler.`,
+    title,
+    description,
+    openGraph: {
+      title: title,
+      description: description,
+      url: `https://www.prestijstudio.com/sanatcilar/${artist.id}`, // <<< KENDİ DOMAIN ADINIZI KULLANIN
+      siteName: 'PrestiJ',
+      images: [
+        {
+          url: ogImageUrl || 'https://www.prestijstudio.com/images/default-og-avatar.jpg', // <<< VARSAYILAN BİR AVATAR RESMİ
+          width: 1200,
+          height: 630,
+        },
+      ],
+      locale: 'tr_TR',
+      type: 'profile',
+      firstName: artist.firstName,
+      lastName: artist.lastName,
+      username: artistName,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: title,
+      description: description,
+      images: [ogImageUrl || 'https://www.prestijstudio.com/images/default-og-avatar.jpg'], // <<< AYNI VARSAYILAN RESİM
+    },
   };
 }
 
