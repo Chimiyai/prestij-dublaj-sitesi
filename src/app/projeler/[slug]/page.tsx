@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/authOptions';
 import ProjectDetailContent from '@/components/projects/ProjectDetailContent'; // YENİ Client Component
 import { RoleInProject } from '@prisma/client';
 import { getCloudinaryImageUrlOptimized } from '@/lib/cloudinary';
+import { ContributionCharacter, ContributionDialogue, ContributionSubmission } from '@/types/contributions';
 
 // ProjectDataForDetail tipi burada veya types dosyasında olabilir
 export interface ProjectDataForDetail {
@@ -34,6 +35,8 @@ export interface ProjectDataForDetail {
     }>;
     categories: Array<{ category: { name: string; slug: string } }>;
     _count: { comments?: number; ratings?: number };
+    volunteerCharacters: ContributionCharacter[];
+    currentUserSubmissions?: Array<{ id: number; audioFilePublicId: string; }>;
 }
 // UserInteraction tipi (ProjectInteractionButtonsProps'tan alınabilir)
 export interface UserInteractionData {
@@ -43,51 +46,73 @@ export interface UserInteractionData {
 }
 
 
-async function getProjectDetails(slug: string): Promise<ProjectDataForDetail | null> {
-    // ... (Mevcut getProjectDetails fonksiyonunuz)
-    const project = await prisma.project.findUnique({
-    where: { slug: decodeURIComponent(slug) }, // type filtresi kaldırıldı
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      type: true, // Bu alanı alıyoruz
-      description: true,
-      bannerImagePublicId: true,
-      coverImagePublicId: true,
-      releaseDate: true,
-      price: true,
-      currency: true,
-      externalWatchUrl: true,
-      trailerUrl: true,
-      likeCount: true,
-      dislikeCount: true,
-      favoriteCount: true,
-      averageRating: true,
-      viewCount: true,
-      _count: { select: { comments: true, ratings: true } },
-      categories: {
-        select: { category: { select: { name: true, slug: true } } }
-      },
-      assignments: {
-        orderBy: [ { role: 'asc'}, { artist: { lastName: 'asc' } } ],
-        select: {
-          id: true,
-          role: true,
-          artist: {
-            select: { id: true, firstName: true, lastName: true, imagePublicId: true, slug: true } // artist.slug eklendi
+async function getProjectDetails(slug: string, userId?: number): Promise<ProjectDataForDetail | null> {
+  const project = await prisma.project.findUnique({
+      where: { slug: decodeURIComponent(slug) },
+      include: { // <<< "select" yerine "include" kullanmak daha kolay olabilir
+          categories: { select: { category: true } },
+          assignments: {
+              orderBy: [ { role: 'asc'}, { artist: { lastName: 'asc' } } ],
+              include: {
+                  artist: true,
+                  voiceRoles: { include: { character: true } }
+              }
           },
-          voiceRoles: {
-            orderBy: { character: { name: 'asc' } },
-            select: { character: { select: { id: true, name: true } } }
-          }
+          // <<< YENİ BÖLÜM: GÖNÜLLÜ KARAKTERLERİNİ ÇEKME <<<
+          characters: {
+            where: { isVolunteerNeeded: true },
+            include: {
+                dialogues: {
+                    orderBy: { createdAt: 'asc' },
+                    include: {
+                        submissions: {
+                            // KOŞULU GÜNCELLE: Sadece bu kullanıcının PENDING durumundaki katkılarını çek
+                            where: { 
+                                userId: userId, // SADECE GİRİŞ YAPMIŞ KULLANICI
+                                status: 'PENDING'
+                            }, 
+                            select: { id: true, audioFilePublicId: true }
+                        }
+                    }
+                }
+            }
         }
-      },
-      // ProjectImage: {} // Galeri olmadığı için bu kaldırıldı
-    }
+          // ------------------------------------------------
+      }
   });
-    if (!project) return null;
-    return project as unknown as ProjectDataForDetail;
+
+  if (!project) return null;
+
+  // Prisma'dan gelen veriyi istediğimiz formata dönüştürelim
+  const { characters, ...restOfProject } = project;
+  const volunteerCharacters: ContributionCharacter[] = characters.map(char => ({
+    id: char.id,
+    name: char.name,
+    dialogues: char.dialogues.map(d => ({
+        id: d.id,
+        dialogueText: d.dialogueText,
+        originalVoiceUrl: d.originalVoiceUrl,
+        // currentUserSubmissions'ı `submissions`'tan dönüştürerek ekle
+        currentUserSubmissions: d.submissions as ContributionSubmission[],
+    }))
+}));
+    const projectData = {
+        ...restOfProject,
+        price: project.price === null ? null : Number(project.price),
+        volunteerCharacters: characters.map(char => ({
+          ...char,
+          dialogues: char.dialogues.map(d => ({
+              ...d,
+              currentUserSubmissions: d.submissions, // `submissions` artık sadece o kullanıcıya ait
+          }))
+      })),
+        _count: { // _count'u manuel oluşturalım
+          comments: await prisma.comment.count({ where: { projectId: project.id } }),
+          ratings: await prisma.projectRating.count({ where: { projectId: project.id } })
+      }
+  };
+  
+  return projectData as unknown as ProjectDataForDetail;
 }
 
 async function getUserSpecificData(userId: number | undefined, projectId: number) {
@@ -137,18 +162,21 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 
-export default async function ProjectDetailPageServer({ params }: { params: { slug: string } }) {
+export default async function ProjectDetailPageServer({ params }: { params: { slug:string } }) {
   const session = await getServerSession(authOptions);
-  const project = await getProjectDetails(params.slug);
+
+  // <<< 1. DEĞİŞİKLİK: `userId`'yi ÖNCE tanımla <<<
+  const userId = session?.user?.id ? parseInt(session.user.id) : undefined;
+
+  // <<< 2. DEĞİŞİKLİK: Şimdi `userId`'yi GÜVENLE kullanabiliriz <<<
+  const project = await getProjectDetails(params.slug, userId);
 
   if (!project) {
     notFound();
   }
-
-  const userId = session?.user?.id ? parseInt(session.user.id) : undefined;
+  
   const { userHasGame, userInitialInteraction } = await getUserSpecificData(userId, project.id);
   
-  // <<< YAPISAL VERİ İÇİN GEREKLİ DEĞİŞKENLERİ BURADA OLUŞTURUYORUZ <<<
   const ogImageUrl = getCloudinaryImageUrlOptimized(project.coverImagePublicId, {
     width: 1200, height: 630, crop: 'fill', gravity: 'face'
   });
@@ -181,9 +209,10 @@ export default async function ProjectDetailPageServer({ params }: { params: { sl
     <>
       <ProjectDetailContent
         project={project}
-        isUserLoggedIn={!!session?.user?.id}
+        isUserLoggedIn={!!session?.user} // `!!session?.user?.id` yerine bu daha temiz
         userHasGame={project.type === 'oyun' ? userHasGame : false}
         userInitialInteraction={userInitialInteraction}
+        user={session?.user || null}
       />
       
       {/* Yapısal Veri Script'i Artık Fonksiyonun İçinde ve Değişkenlere Erişebiliyor */}

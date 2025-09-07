@@ -1,54 +1,61 @@
-// src/app/api/profile/update-details/route.ts (Yeni dosya olabilir)
+// src/app/api/profile/update-details/route.ts (NİHAİ VE TAM HALİ)
+
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import { z } from 'zod';
 
+// Gelen veriyi doğrulamak için esnek bir Zod şeması
+// Tüm alanları `.optional()` olarak işaretliyoruz ki
+// formdan sadece güncellenmek istenen alanlar gönderilebilsin.
 const updateDetailsSchema = z.object({
-  username: z.string().min(3).max(20).optional(),
-  bio: z.string().max(500).nullable().optional(),
-  profileImagePublicId: z.string().nullable().optional(),
-  bannerImagePublicId: z.string().nullable().optional(),
-  // E-posta ve şifre için ayrı endpoint'ler daha güvenli
+  firstName: z.string().min(1, "İsim boş olamaz.").max(50).optional(),
+  lastName: z.string().min(1, "Soyisim boş olamaz.").max(50).optional(),
+  bio: z.string().max(500, "Biyografi 500 karakteri geçemez.").optional(),
+  // Resim ID'leri için de doğrulama ekleyebiliriz
+  profileImagePublicId: z.string().optional(),
+  bannerImagePublicId: z.string().optional(),
 });
 
 export async function PATCH(request: NextRequest) {
+  // 1. Güvenlik: Oturumu kontrol et
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 401 });
   }
-  const userId = parseInt(session.user.id);
 
   try {
+    const userId = parseInt(session.user.id);
     const body = await request.json();
-    const validation = updateDetailsSchema.safeParse(body);
 
-    if (!validation.success) {
-      return NextResponse.json({ message: 'Geçersiz veri.', errors: validation.error.issues }, { status: 400 });
-    }
-
-    const dataToUpdate = validation.data;
-
-    // Kullanıcı adı unique kontrolü (eğer güncelleniyorsa)
-    if (dataToUpdate.username) {
-      const existingUser = await prisma.user.findUnique({ where: { username: dataToUpdate.username } });
-      if (existingUser && existingUser.id !== userId) {
-        return NextResponse.json({ message: 'Bu kullanıcı adı zaten kullanımda.' }, { status: 409 });
-      }
+    // 2. Veriyi Doğrula
+    const parsedBody = updateDetailsSchema.safeParse(body);
+    if (!parsedBody.success) {
+      return NextResponse.json({ message: 'Geçersiz veri.', errors: parsedBody.error.flatten() }, { status: 400 });
     }
     
+    // Zod'dan gelen doğrulanmış ve temizlenmiş veriyi al
+    const dataToUpdate = parsedBody.data;
+
+    // Eğer gönderilen veri boşsa, bir şey yapma
+    if (Object.keys(dataToUpdate).length === 0) {
+        return NextResponse.json({ message: 'Güncellenecek veri bulunamadı.' }, { status: 400 });
+    }
+
+    // 3. Veritabanını Güncelle
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: dataToUpdate,
-      select: { // Sadece güvenli alanları döndür
-        id: true, username: true, email: true, bio: true, 
-        profileImagePublicId: true, bannerImagePublicId: true, role: true
-      }
     });
-    return NextResponse.json(updatedUser);
-  } catch (error: any) {
+    
+    // Güvenlik: Şifre gibi hassas verileri frontend'e geri gönderme
+    const { password, ...userWithoutPassword } = updatedUser;
+
+    return NextResponse.json(userWithoutPassword);
+
+  } catch (error) {
     console.error("Profil güncelleme hatası:", error);
-    return NextResponse.json({ message: error.message || 'Profil güncellenirken bir hata oluştu.' }, { status: 500 });
+    return NextResponse.json({ message: "Profil güncellenirken bir sunucu hatası oluştu." }, { status: 500 });
   }
 }

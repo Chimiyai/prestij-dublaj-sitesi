@@ -3,33 +3,36 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma'; 
-import UserProfileForm, { UserProfileFormProps } from '@/components/profile/UserProfileForm'; // UserProfileFormProps'u import et
+import UserProfileForm, { UserProfileFormProps } from '@/components/profile/UserProfileForm';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Profilim | PrestiJ Dublaj',
+  title: 'Profilim | PrestiJ',
 };
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
 
-  if (!session || !session.user?.id) {
+  if (!session?.user?.id) {
     redirect('/giris?callbackUrl=/profil');
   }
 
   const userIdAsNumber = parseInt(session.user.id, 10); 
   if (isNaN(userIdAsNumber)) {
-       redirect('/'); 
+    redirect('/'); 
   }
 
+  // <<< SORGUYU GÜNCELLE: firstName ve lastName'i de çek <<<
   const userFromDb = await prisma.user.findUnique({
     where: { id: userIdAsNumber },
-    select: { // Sadece UserProfileForm'un ihtiyaç duyduğu alanlar
+    select: {
       id: true,
       username: true,
       email: true,
       bio: true,
       role: true,
+      firstName: true, // EKLENDİ
+      lastName: true,  // EKLENDİ
       profileImagePublicId: true,
       bannerImagePublicId: true,
       createdAt: true,
@@ -42,18 +45,19 @@ export default async function ProfilePage() {
     redirect('/'); 
   }
 
-  // user objesini Client Component'e prop olarak geç
-  // UserProfileForm'un beklediği tipe uygun olduğundan emin ol
+  // <<< VERİ AKTARIMINI GÜNCELLE <<<
   const userForForm: UserProfileFormProps['user'] = {
-    id: userFromDb.id, // Prisma'dan number geliyor
+    id: userFromDb.id,
     username: userFromDb.username,
     email: userFromDb.email,
-    bio: userFromDb.bio, // Artık bu alan var
+    bio: userFromDb.bio,
     role: userFromDb.role,
+    firstName: userFromDb.firstName, // EKLENDİ
+    lastName: userFromDb.lastName,   // EKLENDİ
     profileImagePublicId: userFromDb.profileImagePublicId,
     bannerImagePublicId: userFromDb.bannerImagePublicId,
-    createdAt: userFromDb.createdAt, // Bunlar Date objesi olarak gelmeli
-    updatedAt: userFromDb.updatedAt, // Bunlar Date objesi olarak gelmeli
+    createdAt: userFromDb.createdAt,
+    updatedAt: userFromDb.updatedAt,
   };
 
   return <UserProfileForm user={userForForm} />;

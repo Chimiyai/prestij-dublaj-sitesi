@@ -15,12 +15,15 @@ import { tr } from 'date-fns/locale';
 import { StarIcon, PhotoIcon as PagePhotoIcon, PlayCircleIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { VolunteerSection } from '@/components/project/VolunteerSection';
+import { UserSession, ContributionCharacter } from '@/types/contributions';
 
 interface ProjectDetailContentProps {
   project: ProjectDataForDetail;
   isUserLoggedIn: boolean;
   userHasGame: boolean;
   userInitialInteraction: UserInteractionData;
+  user: UserSession | null;
 }
 
 export default function ProjectDetailContent({
@@ -28,6 +31,7 @@ export default function ProjectDetailContent({
   isUserLoggedIn,
   userHasGame,
   userInitialInteraction,
+  user,
 }: ProjectDetailContentProps) {
   const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false);
   const router = useRouter();
@@ -188,6 +192,8 @@ export default function ProjectDetailContent({
     return null;
   };
 
+  const isProjectCompleted = project.releaseDate ? new Date(project.releaseDate) <= new Date() : false;
+
   return (
     <div className="bg-[#101014] min-h-screen text-gray-300">
       {/* 1. SECTION: Banner/Video Alanı */}
@@ -292,6 +298,15 @@ export default function ProjectDetailContent({
             </div>
           </div>
         </section>
+      )}
+
+      {/* Sadece tamamlanmamış projeler için göster */}
+      {!isProjectCompleted && (
+        <VolunteerSection
+          projectId={project.id}
+          characters={project.volunteerCharacters} // page.tsx'den bu veri gelecek
+          user={user}
+        />
       )}
 
       {/* 3. SECTION: ProjectTabs */}

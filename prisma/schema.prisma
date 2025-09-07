@@ -115,6 +115,8 @@ model User {
   id                     Int      @id @default(autoincrement())
   email                  String   @unique
   username               String   @unique
+  firstName String?
+  lastName  String?
   password               String?
   role                   UserRole @default(USER)
   profileImagePublicId   String?
@@ -157,6 +159,8 @@ model User {
 
   submittedSuggestions CommunitySuggestion[]     @relation("SubmittedSuggestions")
   votes                CommunitySuggestionVote[]
+
+  voiceSubmissions VoiceSubmission[]
 
   @@map("users")
 }
@@ -490,9 +494,13 @@ model ProjectCharacter {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  isVolunteerNeeded Boolean @default(false)
+
   project          Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   // Bu karakteri seslendiren sanatçı atamaları (VoiceAssignment üzerinden)
   voiceAssignments VoiceAssignment[]
+
+  dialogues        CharacterDialogue[]
 
   @@unique([projectId, name]) // Bir projede aynı isimde birden fazla karakter olamaz
   @@index([projectId])
@@ -637,3 +645,45 @@ model DownloadLog {
 }
 
 // ------------------------------------------
+
+// Karakter Diyalogları
+model CharacterDialogue {
+  id          Int      @id @default(autoincrement())
+  
+  characterId Int
+  character   ProjectCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  
+  dialogueText      String
+  originalVoiceUrl  String?  // Yöneticinin yüklediği referans ses dosyasının URL'i
+  
+  createdAt DateTime @default(now())
+  
+  // Bu diyaloğa yapılan ses katkıları
+  submissions VoiceSubmission[]
+
+  @@index([characterId])
+  @@map("character_dialogues")
+}
+
+// Ses Katkıları (Kullanıcı Gönderimleri)
+model VoiceSubmission {
+  id          Int      @id @default(autoincrement())
+  
+  dialogueId  Int
+  dialogue    CharacterDialogue @relation(fields: [dialogueId], references: [id], onDelete: Cascade)
+  
+  userId      Int
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  audioFilePublicId String   // Cloudinary'e yüklenen ses dosyasının ID'si
+  notes             String?
+  
+  status            ApplicationStatus @default(PENDING) // PENDING, APPROVED, REJECTED
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dialogueId])
+  @@index([userId])
+  @@map("voice_submissions")
+}

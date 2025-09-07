@@ -4,11 +4,13 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { PlusCircleIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import CharacterDialoguesModal from './CharacterDialoguesModal';
+import { ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/solid';
 
 export interface ProjectCharacterData {
   id: number;
   name: string;
-  projectSlug: number;
+  isVolunteerNeeded: boolean; // Gönüllü durumu için yeni alan
 }
 
 interface ProjectCharactersManagerProps {
@@ -31,6 +33,9 @@ export default function ProjectCharactersManager({
   const [newCharacterName, setNewCharacterName] = useState('');
   const [editingCharacter, setEditingCharacter] = useState<ProjectCharacterData | null>(null);
   const [editingCharacterName, setEditingCharacterName] = useState('');
+
+  const [isDialogueModalOpen, setIsDialogueModalOpen] = useState(false);
+  const [selectedCharForDialogue, setSelectedCharForDialogue] = useState<ProjectCharacterData | null>(null);
 
   useEffect(() => {
     // Sadece düzenleme modunda VE projectSlug varsa karakterleri fetch et
@@ -173,100 +178,159 @@ export default function ProjectCharactersManager({
         setIsLoading(false);
     }
   };
-return (
-    <div className="border-b border-gray-900/10 dark:border-gray-700 pb-10">
-      <h2 className="text-lg font-semibold leading-7 text-gray-900 dark:text-gray-100">
-        Proje Karakterleri
-      </h2>
-      <p className="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">
-        Bu projede yer alan karakterleri yönetin. Seslendirme sanatçıları bu karakterlere atanacaktır.
-      </p>
-      
-      {/* Sadece DÜZENLEME modunda ve proje ID/slug varsa karakter yönetimini göster */}
-      {isEditing && (projectSlug || projectId) ? (
-        <div className="mt-6">
-          {/* Yeni Karakter Ekleme Formu */}
-          <div className="flex items-end gap-2 mb-4">
-            <div className="flex-grow">
-              <label htmlFor={`char-manager-newCharacterName-${projectId || projectSlug}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Yeni Karakter Adı
-              </label>
-              <input
-                type="text"
-                id={`char-manager-newCharacterName-${projectId || projectSlug}`}
-                value={newCharacterName}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewCharacterName(e.target.value)}
-                placeholder="Karakter adı girin..."
-                className="block w-full rounded-md border-0 py-1.5 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800"
-                disabled={isLoading || isFormPending}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleAddCharacter}
-              disabled={!newCharacterName.trim() || isLoading || isFormPending}
-              className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm h-[38px] flex items-center disabled:opacity-50"
-            >
-              <PlusCircleIcon className="w-5 h-5 mr-1" /> Ekle
-            </button>
-          </div>
 
-          {/* Karakter Listesi */}
-          {isLoading && projectCharacters.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">Karakterler yükleniyor...</p>}
-          {!isLoading && projectCharacters.length === 0 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400">Bu proje için henüz karakter eklenmemiş.</p>
-          )}
-          {!isLoading && projectCharacters.length > 0 && (
-            <ul className="divide-y divide-gray-200 dark:divide-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
-              {projectCharacters.map((char) => (
-                <li key={char.id} className="px-4 py-3 flex items-center justify-between text-sm">
-                  {editingCharacter?.id === char.id ? (
-                      <div className="flex-grow flex items-center gap-2">
-                          <input 
-                              type="text"
-                              value={editingCharacterName}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditingCharacterName(e.target.value)}
-                              className="block w-full rounded-md border-0 py-1 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm dark:bg-gray-800"
-                              disabled={isLoading} // Düzenleme sırasında da yükleme durumu dikkate alınabilir
-                          />
-                          <button type="button" onClick={handleUpdateCharacter} disabled={isLoading || !editingCharacterName.trim()} className="text-green-600 hover:text-green-500 text-xs px-2 py-1 rounded bg-green-100 dark:bg-green-900 dark:text-green-300 disabled:opacity-50">Kaydet</button>
-                          <button type="button" onClick={() => setEditingCharacter(null)} disabled={isLoading} className="text-gray-600 hover:text-gray-500 text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-gray-300 disabled:opacity-50">İptal</button>
-                      </div>
-                  ) : (
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{char.name}</span>
-                  )}
-                  {(!editingCharacter || editingCharacter.id !== char.id) && ( // Düzenleme modunda değilse veya bu karakter düzenlenmiyorsa butonları göster
-                      <div className="flex items-center gap-2">
-                      <button
-                          type="button"
-                          onClick={() => startEditCharacter(char)}
-                          className="font-medium text-indigo-600 hover:text-indigo-500 disabled:opacity-50"
-                          title="Düzenle"
-                          disabled={isLoading || isFormPending || !!editingCharacter} // isFormPending ve !!editingCharacter eklendi
-                      >
-                          <PencilIcon className="w-4 h-4" />
-                      </button>
-                      <button
-                          type="button"
-                          onClick={() => handleDeleteCharacter(char.id)}
-                          className="font-medium text-red-600 hover:text-red-500 disabled:opacity-50"
-                          title="Sil"
-                          disabled={isLoading || isFormPending || !!editingCharacter} // isFormPending ve !!editingCharacter eklendi
-                      >
-                          <TrashIcon className="w-4 h-4" />
-                      </button>
-                      </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      ) : (
-        <p className="mt-4 text-sm text-orange-500 bg-orange-100 dark:bg-orange-900 dark:text-orange-300 p-3 rounded-md">
-          Karakter ekleyebilmek veya yönetebilmek için lütfen önce projeyi kaydedin.
+  const handleVolunteerToggle = async (characterId: number, isNeeded: boolean) => {
+    try {
+      // Bu API'yi bir sonraki adımda oluşturacağız
+      const response = await fetch(`/api/admin/characters/${characterId}/volunteer`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isVolunteerNeeded: isNeeded }),
+      });
+      if (!response.ok) throw new Error('Durum güncellenemedi.');
+      
+      const updatedChar: ProjectCharacterData = await response.json();
+      
+      // Arayüzü anında güncelle
+      setProjectCharacters(prev => 
+        prev.map(c => c.id === characterId ? updatedChar : c)
+      );
+      toast.success('Gönüllü durumu güncellendi.');
+    } catch (error) {
+      // Hata durumunda checkbox'ı eski haline getir (opsiyonel ama iyi UX)
+      setProjectCharacters(prev => 
+        prev.map(c => c.id === characterId ? { ...c, isVolunteerNeeded: !isNeeded } : c)
+      );
+      toast.error((error as Error).message);
+    }
+  };
+
+  // Diyalog modal'ını açan fonksiyon
+  const openDialogueManager = (character: ProjectCharacterData) => {
+    setSelectedCharForDialogue(character);
+    setIsDialogueModalOpen(true);
+  };
+  
+  return (
+    <>
+      <div className="border-b border-gray-900/10 dark:border-gray-700 pb-10">
+        <h2 className="text-lg font-semibold leading-7 text-gray-900 dark:text-gray-100">
+          Proje Karakterleri
+        </h2>
+        <p className="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">
+          Bu projede yer alan karakterleri yönetin. Gönüllü aramak istediğiniz karakterleri işaretleyip diyaloglarını ekleyebilirsiniz.
         </p>
-      )}
-    </div>
+        
+        {isEditing && projectId ? (
+          <div className="mt-6">
+            {/* Yeni Karakter Ekleme Formu */}
+            <div className="flex items-end gap-2 mb-4">
+              <div className="flex-grow">
+                <label htmlFor={`char-manager-newCharacterName-${projectId}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Yeni Karakter Adı
+                </label>
+                <input
+                  type="text"
+                  id={`char-manager-newCharacterName-${projectId}`}
+                  value={newCharacterName}
+                  onChange={(e) => setNewCharacterName(e.target.value)}
+                  placeholder="Karakter adı girin..."
+                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800"
+                  disabled={isLoading || isFormPending}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleAddCharacter}
+                disabled={!newCharacterName.trim() || isLoading || isFormPending}
+                className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm h-[38px] flex items-center disabled:opacity-50"
+              >
+                <PlusCircleIcon className="w-5 h-5 mr-1" /> Ekle
+              </button>
+            </div>
+
+            {/* Karakter Listesi */}
+            {isLoading && projectCharacters.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">Karakterler yükleniyor...</p>}
+            {!isLoading && projectCharacters.length === 0 && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">Bu proje için henüz karakter eklenmemiş.</p>
+            )}
+            {!isLoading && projectCharacters.length > 0 && (
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+                {projectCharacters.map((char) => (
+                  <li key={char.id} className="px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-sm">
+                    
+                    {/* Sol Taraf: Karakter Adı ve Düzenleme */}
+                    <div className="flex-grow w-full sm:w-auto">
+                        {editingCharacter?.id === char.id ? (
+                            <div className="flex items-center gap-2">
+                                <input 
+                                    type="text"
+                                    value={editingCharacterName}
+                                    onChange={(e) => setEditingCharacterName(e.target.value)}
+                                    className="block w-full rounded-md border-0 py-1 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm dark:bg-gray-800"
+                                    disabled={isLoading}
+                                    autoFocus
+                                />
+                                <button type="button" onClick={handleUpdateCharacter} disabled={isLoading || !editingCharacterName.trim()} className="text-green-600 hover:text-green-500 text-xs px-2 py-1 rounded bg-green-100 dark:bg-green-900 dark:text-green-300 disabled:opacity-50">Kaydet</button>
+                                <button type="button" onClick={() => setEditingCharacter(null)} disabled={isLoading} className="text-gray-600 hover:text-gray-500 text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-gray-300 disabled:opacity-50">İptal</button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium text-gray-900 dark:text-gray-100">{char.name}</span>
+                                <div className="flex items-center gap-2">
+                                    <button type="button" onClick={() => startEditCharacter(char)} className="font-medium text-indigo-600 hover:text-indigo-500 disabled:opacity-50" title="Düzenle" disabled={isLoading || isFormPending || !!editingCharacter} >
+                                        <PencilIcon className="w-4 h-4" />
+                                    </button>
+                                    <button type="button" onClick={() => handleDeleteCharacter(char.id)} className="font-medium text-red-600 hover:text-red-500 disabled:opacity-50" title="Sil" disabled={isLoading || isFormPending || !!editingCharacter} >
+                                        <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Sağ Taraf: Gönüllü Yönetimi */}
+                    <div className="flex items-center gap-4 flex-shrink-0 self-end sm:self-center">
+                        {char.isVolunteerNeeded && (
+                            <button type="button" onClick={() => openDialogueManager(char)} className="flex items-center gap-1.5 text-xs font-medium text-cyan-600 dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-200 transition-colors" title="Diyalogları Yönet">
+                                <ChatBubbleBottomCenterTextIcon className="w-4 h-4"/>
+                                Diyaloglar
+                            </button>
+                        )}
+                        <div className="relative flex items-start">
+                            <div className="flex h-6 items-center">
+                                <input
+                                    type="checkbox"
+                                    id={`volunteer-${char.id}`}
+                                    checked={char.isVolunteerNeeded}
+                                    onChange={(e) => handleVolunteerToggle(char.id, e.target.checked)}
+                                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                                />
+                            </div>
+                            <div className="ml-2 text-xs">
+                                <label htmlFor={`volunteer-${char.id}`} className="font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                                    Gönüllü Aranıyor
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-orange-500 bg-orange-100 dark:bg-orange-900 dark:text-orange-300 p-3 rounded-md">
+            Karakter ekleyebilmek veya yönetebilmek için lütfen önce projeyi kaydedin.
+          </p>
+        )}
+      </div>
+
+      <CharacterDialoguesModal
+        isOpen={isDialogueModalOpen}
+        onClose={() => setIsDialogueModalOpen(false)}
+        character={selectedCharForDialogue}
+      />
+    </>
   );
 }

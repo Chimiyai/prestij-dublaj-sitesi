@@ -34,6 +34,11 @@ async function getUserProfile(username: string) {
       createdAt: true,
       updatedAt: true,
       role: true,
+      artistProfile: {
+        select: {
+          id: true // Sadece ID'sini almamız yeterli
+        }
+      }
     },
   });
   return user;
@@ -248,6 +253,7 @@ export default async function UserProfilePage(
             activeTab={activeTab}
             isOwnProfile={isOwnProfile || canAdminEdit} // Hesap Ayarları sekmesi için
             username={currentUsernameFromParams}
+            artistProfileId={user.artistProfile?.id || null}
           />
           <main className="w-full md:w-3/4 lg:w-4/5">
             {activeTab === 'overview' && (

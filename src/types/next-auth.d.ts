@@ -10,6 +10,8 @@ declare module 'next-auth' {
       id: string; // id'yi string olarak kullanıyoruz
       role: string;
       username: string | null;
+      firstName: string | null;
+      lastName: string | null;
       isBanned: boolean;
       banReason: string | null;
       banExpiresAt: Date | string | null; // Hem Date hem string olabileceğini belirtelim
@@ -23,6 +25,8 @@ declare module 'next-auth' {
     id: string; // authorize içinde string'e çeviriyoruz
     role: string;
     username: string;
+    firstName: string | null;
+    lastName: string | null;
     isBanned: boolean;
     banReason: string | null;
     banExpiresAt: Date | null;
@@ -37,6 +41,8 @@ declare module 'next-auth/jwt' {
     id: string;
     role: string;
     username: string | null;
+    firstName: string | null;
+    lastName: string | null;
     isBanned: boolean;
     banReason: string | null;
     banExpiresAt: Date | string | null;

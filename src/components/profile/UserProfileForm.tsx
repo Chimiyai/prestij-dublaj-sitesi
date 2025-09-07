@@ -3,6 +3,7 @@
 
 import { useState, FormEvent, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 // User tipini Prisma'dan import etmeye gerek yok, UserProfileFormProps içinde tanımlı
 // import { User } from '@prisma/client'; 
 import ProfileImageUploader from '@/components/profile/ProfileImageUploader';
@@ -22,6 +23,8 @@ export interface UserProfileFormProps {
   user: { 
     id: number; 
     username: string;
+    firstName: string | null;
+    lastName: string | null;
     bio: string | null;
     email: string;
     role: string;
@@ -34,8 +37,11 @@ export interface UserProfileFormProps {
 
 export default function UserProfileForm({ user: initialUser }: UserProfileFormProps) {
   const router = useRouter();
+  const { data: session, update: updateSession } = useSession();
   // isPending, startTransition'dan gelen boolean değer
   const [isPending, startTransition] = useTransition(); 
+  const [firstName, setFirstName] = useState(initialUser.firstName || '');
+  const [lastName, setLastName] = useState(initialUser.lastName || '');
   const [profileImageIdToDisplay, setProfileImageIdToDisplay] = useState<string | null>(initialUser.profileImagePublicId);
   const [bannerImageIdToDisplay, setBannerImageIdToDisplay] = useState<string | null>(initialUser.bannerImagePublicId);
 
@@ -50,6 +56,45 @@ export default function UserProfileForm({ user: initialUser }: UserProfileFormPr
     setBannerImageIdToDisplay(initialUser.bannerImagePublicId);
   }, [initialUser.profileImagePublicId, initialUser.bannerImagePublicId]);
 
+  const handleNameSave = (e: FormEvent) => {
+    e.preventDefault();
+    startTransition(async () => {
+        const toastId = toast.loading('Bilgiler güncelleniyor...');
+        try {
+            const response = await fetch('/api/profile/update-details', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    firstName: firstName.trim(), 
+                    lastName: lastName.trim() 
+                }),
+            });
+            // <<< API'DEN DÖNEN GÜNCEL VERİYİ AL <<<
+            const updatedUserData = await response.json();
+            if (!response.ok) throw new Error(updatedUserData.message || 'Güncelleme başarısız oldu.');
+            
+            // <<< SESSION'I GÜNCELLEME MANTIĞI <<<
+            // 1. Mevcut session'ın bir kopyasını oluştur
+            const newSessionData = {
+                ...session,
+                user: {
+                    ...session?.user,
+                    // 2. Sadece değişen alanları API'den gelen güncel veriyle üzerine yaz
+                    firstName: updatedUserData.firstName,
+                    lastName: updatedUserData.lastName,
+                }
+            };
+            // 3. NextAuth'a yeni session'ı bildir
+            await updateSession(newSessionData);
+            // ------------------------------------
+            
+            toast.success('İsim ve soyisim başarıyla güncellendi.', { id: toastId });
+            router.refresh(); 
+        } catch (error) {
+            toast.error((error as Error).message, { id: toastId });
+        }
+    });
+  };
 
   const handleImageSave = async (imageType: 'profile' | 'banner') => {
   const fileToUpload = imageType === 'profile' ? selectedProfileFile : selectedBannerFile;
@@ -189,6 +234,8 @@ export default function UserProfileForm({ user: initialUser }: UserProfileFormPr
         <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden pt-16 sm:pt-20 pb-6 md:pb-8 px-6 md:px-8 mt-4">
             <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{initialUser.username}</h1>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{initialUser.firstName} {initialUser.lastName}</h1>
+                <p className="text-md text-gray-600 dark:text-gray-400">@{initialUser.username}</p>
                 <p className="text-md text-gray-600 dark:text-gray-400">{initialUser.email}</p>
                 <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{initialUser.bio}</p>
                 <span className={`mt-2 inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium ${
@@ -206,6 +253,26 @@ export default function UserProfileForm({ user: initialUser }: UserProfileFormPr
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-6 border-b pb-2 dark:border-gray-700">Hesap Ayarları</h2>
 
             <div className="space-y-8">
+            <form onSubmit={handleNameSave} className="p-6 md:p-0 border-t md:border-0 border-gray-200 dark:border-gray-700 md:pt-0">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Kişisel Bilgiler</h3>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                      Bu bilgiler, gönüllü katkılarınız onaylandığında oluşturulacak sanatçı profilinizde kullanılacaktır.
+                    </p>
+                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="firstName" className="form-label">İsim</label>
+                            <input type="text" id="firstName" value={firstName} onChange={e => setFirstName(e.target.value)} className="form-input" />
+                        </div>
+                        <div>
+                            <label htmlFor="lastName" className="form-label">Soyisim</label>
+                            <input type="text" id="lastName" value={lastName} onChange={e => setLastName(e.target.value)} className="form-input" />
+                        </div>
+                    </div>
+                    <button type="submit" disabled={isPending} className="mt-4 w-full sm:w-auto bg-indigo-600 ...">
+                        {isPending ? 'Kaydediliyor...' : 'İsim Bilgilerini Kaydet'}
+                    </button>
+                </form>
+                {/* ---------------------------------- */}
                 <div className="p-6 md:p-0 border-t md:border-0 border-gray-200 dark:border-gray-700 md:pt-0">
                     <ProfileImageUploader 
                         currentImagePublicId={profileImageIdToDisplay} // Güncel state'i ver

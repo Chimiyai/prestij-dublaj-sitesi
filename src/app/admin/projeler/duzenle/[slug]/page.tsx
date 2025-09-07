@@ -5,6 +5,7 @@ import AdminPageLayout from '@/components/admin/AdminPageLayout';
 import { RoleInProject } from '@prisma/client';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 async function getProjectDataForEdit(slug: string) {
   const projectFromDb = await prisma.project.findUnique({
@@ -88,6 +89,13 @@ export default async function EditExistingProjectPage({ params }: { params: Prom
 const { slug: pageSlug } = await params;
 const data = await getProjectDataForEdit(pageSlug);
 
+const pendingContributionsCount = await prisma.voiceSubmission.count({
+  where: {
+    status: 'PENDING',
+    dialogue: { character: { project: { slug: pageSlug } } }
+  }
+});
+
 if (!data || !data.project) {
     notFound();
 }
@@ -102,6 +110,17 @@ return (
     ]}
     >
     <div className="p-6 sm:p-8 max-w-4xl mx-auto"> {/* max-w-3xl idi, biraz genişlettim */}
+      {/* <<< YENİ LİNKİ BURAYA EKLİYORUZ <<< */}
+      {pendingContributionsCount > 0 && (
+          <div className="mb-6">
+            <Link 
+              href={`/admin/katkilar`} // <<< LİNKİ GÜNCELLE
+              className="inline-flex items-center gap-2 p-3 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-lg font-semibold text-sm hover:bg-blue-200 dark:hover:bg-blue-900"
+            >
+              Bu Proje İçin Bekleyen {pendingContributionsCount} Yeni Katkı Var. İncele &rarr;
+            </Link>
+          </div>
+        )}
         <p className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
         Proje: <span className='font-bold text-indigo-600 dark:text-indigo-400'>{data.project.title}</span>
         </p>
