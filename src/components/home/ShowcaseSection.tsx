@@ -67,7 +67,7 @@ const ShowcaseSection: React.FC<ShowcaseSectionProps> = ({
             </span>
             {/* Orijinal CSS: .showcase-section .btn-dub-request */}
             <Link
-              href={dubRequestLink}
+              href="oneriler"
               className="btn-dub-request text-[0.75em] sm:text-[0.85em] font-medium py-[6px] px-3 sm:py-2 sm:px-[18px]
                          bg-[#231B36] text-[#D1D1D1] border border-[#28282C] rounded-md
                          transition-colors duration-200 ease-in-out

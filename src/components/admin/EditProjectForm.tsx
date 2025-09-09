@@ -30,6 +30,7 @@ export interface AssignmentFormData {
 }
 export interface InitialProjectData {
   id?: number;
+  createdAt?: string;
   title: string;
   slug: string;
   type: ProjectTypeEnum;
@@ -158,6 +159,50 @@ export default function EditProjectForm({
   const [isFeatured, setIsFeatured] = useState(initialProjectData?.isFeaturedForCountdown ?? false);
   const [progress, setProgress] = useState(initialProjectData?.progressPercentage ?? 0);
 
+
+  useEffect(() => {
+    // Sadece düzenleme modundaysa ve `createdAt` varsa hesapla
+    if (isEditing && initialProjectData?.createdAt && releaseDate) {
+      const startDate = new Date(initialProjectData.createdAt);
+      const endDate = new Date(releaseDate);
+      const now = new Date();
+
+      // Geçerli tarihler olduğundan emin ol
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        setProgress(0);
+        return;
+      }
+      
+      // Eğer yayın tarihi geçmişse, ilerleme %100'dür.
+      if (now >= endDate) {
+        setProgress(100);
+        return;
+      }
+      
+      // Eğer şimdiki zaman, başlangıç zamanından önceyse, ilerleme %0'dır.
+      if (now <= startDate) {
+        setProgress(0);
+        return;
+      }
+
+      const totalDuration = endDate.getTime() - startDate.getTime();
+      const elapsedDuration = now.getTime() - startDate.getTime();
+
+      // Bölme hatasını önle
+      if (totalDuration <= 0) {
+        setProgress(100);
+        return;
+      }
+
+      const calculatedPercentage = Math.round((elapsedDuration / totalDuration) * 100);
+      
+      // Değerin 0 ile 100 arasında olduğundan emin ol
+      setProgress(Math.max(0, Math.min(100, calculatedPercentage)));
+    } else {
+        // Yeni proje oluşturuluyorsa veya tarih bilgisi yoksa ilerlemeyi 0 yap
+        setProgress(0);
+    }
+  }, [releaseDate, initialProjectData?.createdAt, isEditing]); // Yayın tarihi değiştikçe yeniden hesapla
 
   // Initial data değiştiğinde state'leri güncelle (form resetleme veya prop güncellemesi için)
   useEffect(() => {
@@ -501,19 +546,22 @@ export default function EditProjectForm({
         {/* İlerleme Yüzdesi Slider'ı (sadece öne çıkarıldıysa göster) */}
         {isFeatured && (
             <div className="mt-6">
-                <label htmlFor="progress" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                    Proje İlerleme Yüzdesi: <span className="font-bold text-indigo-600 dark:text-indigo-400">{progress}%</span>
-                </label>
-                <input
-                    id="progress"
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={progress}
-                    onChange={(e) => setProgress(parseInt(e.target.value, 10))}
-                    className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer mt-2"
-                />
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+                      Otomatik Proje İlerlemesi
+                  </label>
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">{progress}%</span>
+                </div>
+                {/* Görsel ilerleme çubuğu */}
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                  <div 
+                    className="bg-indigo-600 h-2.5 rounded-full" 
+                    style={{ width: `${progress}%` }}>
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Bu yüzde, projenin oluşturulma ve yayınlanma tarihi arasındaki geçen süreye göre otomatik olarak hesaplanır.
+                </p>
             </div>
         )}
       </div>

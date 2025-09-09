@@ -1,19 +1,25 @@
 // src/app/api/admin/users/[userId]/route.ts
+
 import prisma from '@/lib/prisma';
-import { NextRequest, NextResponse } from 'next/server'; // NextRequest import edildi
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import { z } from 'zod';
 
+// --- DEĞİŞİKLİK BURADA ---
 const updateUserRoleSchema = z.object({
-  role: z.enum(['USER', 'ADMIN'], {
-    errorMap: () => ({ message: "Rol 'USER' veya 'ADMIN' olmalıdır." }),
+  role: z.enum(['USER', 'ADMIN', 'MODERATOR'], { // MODERATOR eklendi
+    errorMap: () => ({ message: "Geçersiz rol. Rol 'USER', 'MODERATOR' veya 'ADMIN' olmalıdır." }),
   }),
 });
 
+// --- DEĞİŞİKLİK BURADA ---
+// PATCH ve DELETE fonksiyonlarının geri kalanı DEĞİŞMEYECEK.
+// Sadece PATCH içindeki let newRole: 'USER' | 'ADMIN'; satırını güncellemeliyiz.
+
 export async function PATCH(
-  request: NextRequest, // Request tipini NextRequest olarak değiştirdik
-  { params }: { params: Promise<{ userId: string }> } // params'ı Promise olarak al
+  request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'ADMIN') {
@@ -39,7 +45,7 @@ export async function PATCH(
     );
   }
 
-  let newRole: 'USER' | 'ADMIN';
+  let newRole: 'USER' | 'ADMIN' | 'MODERATOR';
   try {
     const body = await request.json();
     const parsedBody = updateUserRoleSchema.safeParse(body);

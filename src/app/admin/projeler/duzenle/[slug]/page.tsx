@@ -10,7 +10,23 @@ import Link from 'next/link';
 async function getProjectDataForEdit(slug: string) {
   const projectFromDb = await prisma.project.findUnique({
     where: { slug },
-    include: {
+    select: { // <<< YENİ: `include` yerine `select` kullanmak daha verimli
+      id: true,
+      createdAt: true, // <<< İSTEDİĞİMİZ ALAN BURADA
+      title: true,
+      slug: true,
+      type: true,
+      description: true,
+      coverImagePublicId: true,
+      bannerImagePublicId: true,
+      releaseDate: true,
+      isPublished: true,
+      isFeaturedForCountdown: true,
+      progressPercentage: true,
+      price: true,
+      currency: true,
+      externalWatchUrl: true,
+      trailerUrl: true,
       assignments: {
         include: {
           artist: { select: { id: true, firstName: true, lastName: true } },
@@ -41,6 +57,7 @@ async function getProjectDataForEdit(slug: string) {
   // ProjectFormData'ya uygun hale getir
   const formattedProject: InitialProjectData = {
     id: projectFromDb.id,
+    createdAt: projectFromDb.createdAt.toISOString(),
     title: projectFromDb.title,
     slug: projectFromDb.slug,
     type: projectFromDb.type as ProjectTypeEnum,

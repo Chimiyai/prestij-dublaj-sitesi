@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import SuggestOptionCard from './SuggestOptionCard';
 import { SupportSuggestionModal } from './SupportSuggestionModal';
+import { Users, DollarSign } from 'lucide-react';
 
 const SuggestGameSection = () => {
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
@@ -37,7 +38,7 @@ const SuggestGameSection = () => {
                   title="Destek Vererek Oyun Önerin"
                   description="Bu türü seçersen oyunun çok yüksek ihtimalle kabul edilir."
                   buttonText="Destekle & Öner"
-                  buttonIconSrc="/images/icon-donate-game.jpg"
+                  Icon={DollarSign}
                   onButtonClick={openSupportModal}
                   isPrimaryAction={true}
                 />
@@ -49,7 +50,7 @@ const SuggestGameSection = () => {
                             title="Topluluk Gücüyle Önerin"
                             description="Kullanıcılar bir oyuna belli bir istek sayısından sonra o oyunun dublajına başlayabiliriz."
                             buttonText="Öneri Sayfasına Git"
-                            buttonIconSrc="/images/icon-community-game.jpg"
+                            Icon={Users}
                             onButtonClick={() => {}}
                             isPrimaryAction={false}
                         />

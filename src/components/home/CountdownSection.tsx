@@ -58,6 +58,7 @@ const DateTimeDisplay = ({ value, type }: { value: number, type: string }) => {
 export default function CountdownSection() {
   const [project, setProject] = useState<FeaturedProject | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [animatedPercentage, setAnimatedPercentage] = useState(0);
 
   useEffect(() => {
     const fetchFeaturedProject = async () => {
@@ -84,6 +85,19 @@ export default function CountdownSection() {
     fetchFeaturedProject();
   }, []);
 
+  useEffect(() => {
+    // Proje verisi varsa ve progressPercentage null değilse,
+    // küçük bir gecikmeyle (örneğin 100ms) animasyonu başlat.
+    // Bu, CSS'in ilk render'ı yakalamasına olanak tanır.
+    if (project && project.progressPercentage !== null) {
+      const timer = setTimeout(() => {
+        setAnimatedPercentage(project.progressPercentage as number);
+      }, 100);
+      
+      return () => clearTimeout(timer); // Cleanup
+    }
+  }, [project]);
+
   const { days, hours, minutes, seconds } = useCountdown(project?.releaseDate || new Date().toISOString());
 
   // Cloudinary URL'lerini oluşturalım
@@ -94,8 +108,8 @@ export default function CountdownSection() {
     width: 300, height: 400, crop: 'fill', gravity: 'face'
   });
 
-  if (isLoading || !project) {
-    return null; // Proje yoksa veya yükleniyorsa bölümü gösterme
+  if (!project) {
+    return null; 
   }
   
   const isCountdownFinished = days + hours + minutes + seconds <= 0;
@@ -141,20 +155,20 @@ export default function CountdownSection() {
               </div>
             )}
 
-            {project.progressPercentage !== null && (
-              <div className="max-w-md mx-auto lg:mx-0 mb-10">
-                <div className="flex justify-between items-center mb-2 text-sm text-gray-200">
-                    <span>Proje İlerlemesi</span>
-                    <span className="font-semibold text-lg">{project.progressPercentage}%</span>
-                </div>
-                <div className="w-full bg-black/30 rounded-full h-3 border border-white/10">
-                    <div 
-                        className="bg-gradient-to-r from-prestij-purple-light to-prestij-purple h-full rounded-full transition-all duration-500" 
-                        style={{ width: `${project.progressPercentage}%` }}
-                    ></div>
-                </div>
+{project.progressPercentage !== null && (
+            <div className="max-w-md mx-auto lg:mx-0 mb-10">
+              <div className="flex justify-between items-center mb-2 text-sm text-gray-200">
+                  <span>Proje İlerlemesi</span>
+                  <span className="font-semibold text-lg">{project.progressPercentage}%</span>
               </div>
-            )}
+              <div className="w-full bg-black/30 rounded-full h-3 border border-white/10 overflow-hidden"> {/* YENİ: overflow-hidden eklendi */}
+              <div 
+    className="bg-prestij-purple h-full rounded-full transition-all duration-1000 ease-out" 
+    style={{ width: `${animatedPercentage}%` }}
+></div>
+              </div>
+            </div>
+          )}
             
             <Link href={`/projeler/${project.slug}`} className="inline-block bg-prestij-purple hover:bg-prestij-purple-darker text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105">
               Projeyi İncele

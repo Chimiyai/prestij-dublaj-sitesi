@@ -6,7 +6,6 @@ import DubbedAnimeSection from "@/components/home/DubbedAnimeSection";
 import PopularContentSection from "@/components/home/PopularContentSection";
 import SuggestGameSection from "@/components/home/SuggestGameSection";
 import CountdownSection from "@/components/home/CountdownSection";
-import JoinDiscordSection from "@/components/home/JoinDiscordSection";
 
 export const metadata: Metadata = {
   title: 'PrestiJ | Oyunlar için Türkçe Dublaj Projeleri',
@@ -48,7 +47,6 @@ export default function HomePage() {
       <PopularContentSection />
       <SuggestGameSection />
       <CountdownSection />
-      <JoinDiscordSection />
     </>
   );
 }

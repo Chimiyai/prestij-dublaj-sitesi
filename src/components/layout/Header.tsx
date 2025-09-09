@@ -38,7 +38,7 @@ interface HeaderStats {
 // Sahte veri
 const navLinksData = [
   { label: 'Oyunlar', href: 'oyunlar', dropdownId: 'oyunlarDropdown' },
-  { label: 'Animeler', href: 'animeler', dropdownId: 'animelerDropdown' },
+  //{ label: 'Animeler', href: 'animeler', dropdownId: 'animelerDropdown' },
   { label: 'Kadromuz', href: '/kadromuz' },
   { label: 'Bize Katıl!', href: '/bize-katil' }, // Artık Discord linki değil, sitemizdeki başvuru sayfası.
 ];
@@ -124,10 +124,10 @@ const Header = () => {
 const oyunlarDropdownContent = {
     main: [
       { label: `Tüm Oyunlar (${stats.totalDubbedGames})`, href: '/oyunlar' },
-      { label: `Yeni Eklenenler (${stats.recentGames})`, href: '/oyunlar/yeni' },
+      { label: `Yeni Eklenenler (${stats.recentGames})`, href: '#' },
     ],
     favorites: [
-      { label: 'Oyun Ekle +', href: '/oyunlar/ekle', isAction: true },
+      { label: 'Oyun Ekle +', href: '#', isAction: true },
     ],
   };
 
@@ -289,7 +289,7 @@ const handleDownloadClick = () => {
 
   const navLinksForDesktop: NavLinkItem[] = [ // İsmi değiştirdim, çakışmayı önlemek için
     { label: 'Oyunlar', href: '/oyunlar', dropdownId: 'oyunlarDropdown' },
-    { label: 'Animeler', href: '/animeler', dropdownId: 'animelerDropdown' },
+    //{ label: 'Animeler', href: '/animeler', dropdownId: 'animelerDropdown' },
     { label: 'Kadromuz', href: '/kadromuz' },
     { label: 'Bize Katıl!', href: 'https://discord.gg/9hX4GJtEsX' },
   ];
@@ -308,7 +308,7 @@ const handleDownloadClick = () => {
   const getMobileMenuMainItems = (): MobileMenuItem[] => {
     const mainItems: MobileMenuItem[] = [
       { label: 'Oyunlar', action: 'submenu', target: 'gamesSubmenu', iconRight: <ChevronDownIcon className="h-4 w-4 text-prestij-text-muted" /> },
-      { label: 'Animeler', action: 'submenu', target: 'animeSubmenu', iconRight: <ChevronDownIcon className="h-4 w-4 text-prestij-text-muted" /> },
+      //{ label: 'Animeler', action: 'submenu', target: 'animeSubmenu', iconRight: <ChevronDownIcon className="h-4 w-4 text-prestij-text-muted" /> },
     ];
     if (session?.user) {
       mainItems.push({ 

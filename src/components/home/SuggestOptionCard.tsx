@@ -1,22 +1,22 @@
 // src/components/home/SuggestOptionCard.tsx
 "use client";
 
-import Image from 'next/image'; // Eğer buton içinde imaj varsa
+import { ElementType } from 'react'; // React'ten ElementType'ı import ediyoruz
 
 interface SuggestOptionCardProps {
   title: string;
   description: string;
   buttonText: string;
-  buttonIconSrc?: string; // Opsiyonel ikon src
+  Icon?: ElementType; // <-- DEĞİŞİKLİK 1: `buttonIconSrc` yerine `Icon` prop'u
   onButtonClick: () => void;
-  isPrimaryAction?: boolean; // Buton stilini belirlemek için
+  isPrimaryAction?: boolean;
 }
 
 const SuggestOptionCard: React.FC<SuggestOptionCardProps> = ({
   title,
   description,
   buttonText,
-  buttonIconSrc,
+  Icon, // <-- DEĞİŞİKLİK 2: Prop'u alıyoruz
   onButtonClick,
   isPrimaryAction = false,
 }) => {
@@ -33,9 +33,8 @@ const SuggestOptionCard: React.FC<SuggestOptionCardProps> = ({
         onClick={onButtonClick}
         className={`${buttonBaseClasses} ${isPrimaryAction ? primaryButtonClasses : secondaryButtonClasses}`}
       >
-        {buttonIconSrc && (
-          <Image src={buttonIconSrc} alt="" width={16} height={16} className="btn-icon w-4 h-4 object-contain" />
-        )}
+        {/* --- DEĞİŞİKLİK 3: Image bileşeni yerine doğrudan Icon'u render ediyoruz --- */}
+        {Icon && <Icon className="btn-icon w-4 h-4" />}
         {buttonText}
       </button>
       <p className="suggest-option-description text-xs text-suggest-card-description leading-relaxed">
