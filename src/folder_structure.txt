@@ -8,6 +8,7 @@
         icon.png
         layout.tsx
         page.tsx
+        sitemap.ts
         (auth)/
             layout.tsx
             giris/
@@ -16,15 +17,37 @@
                 page.tsx
         admin/
             page.tsx
+            basvurular/
+                ApplicationActions.tsx
+                page.tsx
+            istatistikler/
+                page.tsx
+                _components/
+                    StatCard.tsx
+                    StatisticsDashboard.tsx
             kategoriler/
                 page.tsx
+            katkilar/
+                page.tsx
+                _components/
+                    ContributionsClientPage.tsx
+                    SubmissionsList.tsx
             kullanicilar/
                 page.tsx
+            oneriler/
+                page.tsx
+                _components/
+                    CommunitySuggestionsTable.tsx
+                    SupportSuggestionsTable.tsx
             projeler/
                 page.tsx
                 duzenle/
                     [slug]/
                         page.tsx
+                        katkilar/
+                            page.tsx
+                            _components/
+                                ContributionsReview.tsx
                 yeni/
                     page.tsx
             raporlar/
@@ -38,12 +61,27 @@
                     page.tsx
         api/
             admin/
+                applications/
+                    [applicationId]/
+                        route.ts
                 categories/
                     route.ts
                     [id]/
                         route.ts
+                characters/
+                    [characterId]/
+                        dialogues/
+                            route.ts
+                        volunteer/
+                            route.ts
                 cloudinary-utils/
                     delete-image/
+                        route.ts
+                dialogues/
+                    route.ts
+                    upload-voice/
+                        route.ts
+                    [dialogueId]/
                         route.ts
                 project-characters/
                     route.ts
@@ -67,6 +105,18 @@
                         route.ts
                     [artistId]/
                         route.ts
+                submissions/
+                    assign-artist/
+                        route.ts
+                    bulk/
+                        route.ts
+                    [submissionId]/
+                        route.ts
+                suggestions/
+                    community/
+                        [suggestionId]/
+                            status/
+                                route.ts
                 users/
                     [userId]/
                         route.ts
@@ -74,6 +124,8 @@
                             route.ts
                         update-username/
                             route.ts
+            applications/
+                route.ts
             artists/
                 [artistId]/
                     favorite/
@@ -88,6 +140,8 @@
             comments/
                 [commentId]/
                     route.ts
+            contribution-upload/
+                route.ts
             games/
                 add-to-library/
                     route.ts
@@ -107,9 +161,11 @@
                 route.ts
             payment/
                 create-session/
-                shopier/
-                    route.ts
+                    shopier/
+                        route.ts
                 webhook/
+                    bynogame/
+                        route.ts
                     shopier/
                         route.ts
             profile/
@@ -125,6 +181,8 @@
                     route.ts
             projects/
                 route.ts
+                featured/
+                    route.ts
                 top-favorites/
                     route.ts
                 [projectId]/
@@ -146,6 +204,16 @@
                 route.ts
             stats/
                 route.ts
+            submissions/
+                route.ts
+            suggestions/
+                community/
+                    route.ts
+                    [suggestionId]/
+                        vote/
+                            route.ts
+                support/
+                    route.ts
             users/
                 [userId]/
                     (actions)/
@@ -165,10 +233,21 @@
                         route.ts
         banlandiniz/
             page.tsx
+        bize-katil/
+            page.tsx
+            _components/
+                ApplicationForm.tsx
+                BizeKatilClientPage.tsx
+                ProfilePreviewCard.tsx
         gizlilik-politikasi/
             page.tsx
         hakkimizda/
             page.tsx
+        indir/
+            page.tsx
+            _components/
+                DownloadPageClient.tsx
+                DownloadPageSlider.tsx
         kadromuz/
             page.tsx
         kullanim-kosullari/
@@ -178,6 +257,13 @@
             page.tsx
             [userId]/
                 page.tsx
+        oneriler/
+            page.tsx
+            _components/
+                AddSuggestionButton.tsx
+                VoteButton.tsx
+        oyun-istek-sartlari/
+            page.tsx
         profil/
             page.tsx
             dogrula/
@@ -210,8 +296,10 @@
             AddProjectForm.tsx
             AdminArtistAvatar.tsx
             AdminPageLayout.tsx
+            AdminSidebar.tsx
             BanUserButton.tsx
             CategoryManager.tsx
+            CharacterDialoguesModal.tsx
             CoverImageUploader.tsx
             DeleteArtistButton.tsx
             DeleteProjectButton.tsx
@@ -235,6 +323,7 @@
             GirisPageClient.tsx
             SignOutButton.tsx
         home/
+            CountdownSection.tsx
             DubbedAnimeSection.tsx
             DubbedGamesSection.tsx
             HeroSection.tsx
@@ -248,6 +337,7 @@
             SiteStatsSection.tsx
             SuggestGameSection.tsx
             SuggestOptionCard.tsx
+            SupportSuggestionModal.tsx
             TopProjectCard.tsx
             TopProjectCardPlaceholder.tsx
         layout/
@@ -279,7 +369,9 @@
             VerifyEmailClientContent.tsx
         project/
             CommentsSection.tsx
+            ContributionModal.tsx
             ProjectInteractionButtons.tsx
+            VolunteerSection.tsx
         projects/
             FilterSidebar.tsx
             ProjectDetailContent.tsx
@@ -288,15 +380,21 @@
             ProjectTabs.tsx
             SortDropdown.tsx
         ui/
+            badge.tsx
             button.tsx
             card.tsx
             ClientToaster.tsx
             DropdownControl.tsx
             input.tsx
+            multi-select-dropdown.tsx
             Pagination.tsx
             PopularContentCard.tsx
             PopularContentCardPlaceholder.tsx
+            ProjectCover.tsx
             SliderCard.tsx
+            tabs.tsx
+            UserAvatar.tsx
+            WaveformPlayer.tsx
     data/
         showcaseData.ts
     lib/
@@ -305,6 +403,7 @@
         prisma.ts
         utils.ts
     types/
+        contributions.ts
         hero.ts
         next-auth.d.ts
         showcase.ts
