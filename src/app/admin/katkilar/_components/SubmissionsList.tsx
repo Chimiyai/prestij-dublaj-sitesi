@@ -154,6 +154,43 @@ export function SubmissionsList({ status, submissions, assignedCharacters, selec
         return <div className="p-8 text-center text-gray-500">Bu sekmede gösterilecek katkı yok.</div>;
     }
 
+    const handleDownload = async (publicId: string, username: string, characterName: string, dialogueText: string) => {
+        const toastId = toast.loading('Ses dosyası hazırlanıyor...');
+        try {
+            // Cloudinary'den dosyanın doğrudan indirme URL'ini alıyoruz.
+            // 'video' olarak alıp, indirme flag'i ekliyoruz.
+            const audioUrl = getCloudinaryImageUrlOptimized(publicId, {
+                resource_type: 'video',
+                flags: 'attachment', // Bu flag, tarayıcıya dosyayı oynatmak yerine indirmesini söyler
+            });
+
+            // Tarayıcının fetch API'sini kullanarak dosyayı bir blob olarak indiriyoruz.
+            const response = await fetch(audioUrl);
+            if (!response.ok) {
+                throw new Error('Dosya indirilemedi. Cloudinary linki geçersiz olabilir.');
+            }
+            const blob = await response.blob();
+
+            // Sanal bir link oluşturup, programatik olarak tıklayarak indirmeyi başlatıyoruz.
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            
+            // Dosya adını anlamlı hale getiriyoruz.
+            const safeDialogueText = dialogueText.substring(0, 20).replace(/[^a-z0-9]/gi, '_');
+            link.download = `${characterName}_${username}_${safeDialogueText}.mp3`; // Cloudinary genellikle mp3'e çevirir
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href); // Belleği temizle
+
+            toast.success('İndirme başladı.', { id: toastId });
+        } catch (error) {
+            console.error('İndirme hatası:', error);
+            toast.error((error as Error).message, { id: toastId });
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg flex flex-wrap items-center gap-4">
@@ -248,12 +285,26 @@ export function SubmissionsList({ status, submissions, assignedCharacters, selec
                                                             <span className="text-sm font-medium w-32 truncate" title={sub.user.username}>{sub.user.username}</span>
                                                             <WaveformPlayer audioUrl={getCloudinaryImageUrlOptimized(sub.audioFilePublicId, { resource_type: 'video' })} />
                                                             <div className="flex items-center gap-2 ml-auto">
-                                                                {status === 'PENDING' && (<>
-                                                                    <button onClick={() => handleUpdateStatus(sub.id, 'APPROVED')} disabled={processingId === sub.id} title="Onayla" className="p-2 text-green-600 hover:text-green-500"><Check className="w-5 h-5"/></button>
-                                                                    <button onClick={() => handleUpdateStatus(sub.id, 'REJECTED')} disabled={processingId === sub.id} title="Reddet" className="p-2 text-red-600 hover:text-red-500"><X className="w-5 h-5"/></button>
-                                                                </>)}
-                                                                {status === 'APPROVED' && <button onClick={() => handleUpdateStatus(sub.id, 'PENDING')} disabled={processingId === sub.id} title="Bekleyenlere Geri Gönder" className="p-2 text-yellow-500 hover:text-yellow-400"><Undo2 className="w-5 h-5"/></button>}
-                                                                {status === 'REJECTED' && <button title="Kalıcı Olarak Sil" className="p-2 text-gray-500 hover:text-gray-400"><Trash2 className="w-5 h-5"/></button>}
+                                                            {status === 'PENDING' && (<>
+                                        <button onClick={() => handleUpdateStatus(sub.id, 'APPROVED')} disabled={processingId === sub.id} title="Onayla" className="p-2 text-green-600 hover:text-green-500"><Check className="w-5 h-5"/></button>
+                                        <button onClick={() => handleUpdateStatus(sub.id, 'REJECTED')} disabled={processingId === sub.id} title="Reddet" className="p-2 text-red-600 hover:text-red-500"><X className="w-5 h-5"/></button>
+                                    </>)}
+                                    {status === 'APPROVED' && (<>
+                                        <button 
+                                            onClick={() => handleDownload(sub.audioFilePublicId, sub.user.username, character.name, dialogue.dialogueText)} 
+                                            title="Sesi İndir" 
+                                            className="p-2 text-blue-500 hover:text-blue-400"
+                                        >
+                                            <Download className="w-5 h-5"/>
+                                        </button>
+                                        <button onClick={() => handleUpdateStatus(sub.id, 'PENDING')} disabled={processingId === sub.id} title="Bekleyenlere Geri Gönder" className="p-2 text-yellow-500 hover:text-yellow-400"><Undo2 className="w-5 h-5"/></button>
+                                    </>)}
+                                    {status === 'REJECTED' && (<>
+        <button onClick={() => handleUpdateStatus(sub.id, 'PENDING')} disabled={processingId === sub.id} title="Bekleyenlere Geri Gönder" className="p-2 text-yellow-500 hover:text-yellow-400">
+            <Undo2 className="w-5 h-5"/>
+        </button>
+        <button title="Kalıcı Olarak Sil" className="p-2 text-gray-500 hover:text-gray-400"><Trash2 className="w-5 h-5"/></button>
+    </>)}
                                                                 {sub.notes && (
       <div className="group relative p-2"> {/* `group` bu div'in ebeveyni */}
         <Info className="w-4 h-4 text-gray-400"/>
