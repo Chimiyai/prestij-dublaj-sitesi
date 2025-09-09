@@ -1,13 +1,16 @@
 // src/components/admin/EditArtistForm.tsx
 'use client';
 
+'use client';
+
 import { useRouter } from 'next/navigation';
 import { useState, useTransition, FormEvent, useEffect } from 'react';
 import ImageUploader from '@/components/admin/ImageUploader';
 import toast from 'react-hot-toast';
-// import { DubbingArtist } from '@prisma/client'; // Prisma tipini doğrudan kullanmak yerine kendi form tipimizi tanımlayalım
-import slugify from 'slugify'; // YENİ: slugify importu
-
+import slugify from 'slugify';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input'; // Varsayımsal UI bileşenleri
 // Düzenleme formu için prop tipi (page.tsx'ten gelecek)
 // Bu tip, Prisma'daki DubbingArtist modeline eklediğimiz tüm alanları içermeli.
 export interface ArtistFormDataForEdit {
@@ -283,13 +286,13 @@ export default function EditArtistForm({ artist: initialArtistData, isEditing }:
         />
           <div>
             <label htmlFor="slug" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Slug</label>
-            <input type="text" name="slug" id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} className="mt-1 ..."/>
+            <input type="text" name="slug" id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-gray-200"/>
             {errors.slug && <p className="text-red-500 text-xs mt-1">{errors.slug}</p>}
           </div>
         </div>
         <div className="mt-6">
           <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Biyografi</label>
-          <textarea id="bio" name="bio" rows={4} value={bio || ''} onChange={(e) => setBio(e.target.value)} className="mt-1 ..."></textarea>
+          <textarea id="bio" name="bio" rows={4} value={bio || ''} onChange={(e) => setBio(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-gray-200"></textarea>
         </div>
       </section>
 
@@ -315,7 +318,7 @@ export default function EditArtistForm({ artist: initialArtistData, isEditing }:
         <div className="space-y-6">
           <div>
             <label htmlFor="siteRole" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Sitedeki Unvanı (Opsiyonel)</label>
-            <input type="text" name="siteRole" id="siteRole" value={siteRole || ''} onChange={(e) => setSiteRole(e.target.value)} className="mt-1 ..."/>
+            <input type="text" name="siteRole" id="siteRole" value={siteRole || ''} onChange={(e) => setSiteRole(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-gray-200"/>
           </div>
           
           {/* Sosyal Medya Linkleri */}
@@ -323,24 +326,24 @@ export default function EditArtistForm({ artist: initialArtistData, isEditing }:
           {/* Örnek: Twitter */}
           <div>
             <label htmlFor="twitterUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Twitter URL</label>
-            <input type="url" name="twitterUrl" id="twitterUrl" value={twitterUrl || ''} onChange={(e) => setTwitterUrl(e.target.value)} placeholder="https://twitter.com/kullaniciadi" className="mt-1 ..."/>
+            <input type="url" name="twitterUrl" id="twitterUrl" value={twitterUrl || ''} onChange={(e) => setTwitterUrl(e.target.value)} placeholder="https://twitter.com/kullaniciadi" className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-gray-200"/>
           </div>
           <div>
             <label htmlFor="instagramUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Instagram URL</label>
-            <input type="url" name="instagramUrl" id="instagramUrl" value={instagramUrl || ''} onChange={(e) => setInstagramUrl(e.target.value)} placeholder="https://instagram.com/kullaniciadi" className="mt-1 ..."/>
+            <input type="url" name="instagramUrl" id="instagramUrl" value={instagramUrl || ''} onChange={(e) => setInstagramUrl(e.target.value)} placeholder="https://instagram.com/kullaniciadi" className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-gray-200"/>
           </div>
           <div>
             <label htmlFor="youtubeUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Youtube URL</label>
-            <input type="url" name="youtubeUrl" id="youtubeUrl" value={youtubeUrl || ''} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/kullaniciadi" className="mt-1 ..."/>
+            <input type="url" name="youtubeUrl" id="youtubeUrl" value={youtubeUrl || ''} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/kullaniciadi" className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-gray-200"/>
           </div>
           <div>
             <label htmlFor="websiteUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Website URL</label>
-            <input type="url" name="websiteUrl" id="websiteUrl" value={websiteUrl || ''} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://ornek.com" className="mt-1 ..."/>
+            <input type="url" name="websiteUrl" id="websiteUrl" value={websiteUrl || ''} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://ornek.com" className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-gray-200"/>
           </div>
 
           <div>
             <label htmlFor="donationLink" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bağış Linki (Opsiyonel)</label>
-            <input type="url" name="donationLink" id="donationLink" value={donationLink || ''} onChange={(e) => setDonationLink(e.target.value)} placeholder="https://patreon.com/kullanici" className="mt-1 ..."/>
+            <input type="url" name="donationLink" id="donationLink" value={donationLink || ''} onChange={(e) => setDonationLink(e.target.value)} placeholder="https://patreon.com/kullanici" className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-gray-200"/>
           </div>
 
           <div className="flex items-center gap-x-3">
@@ -360,7 +363,7 @@ export default function EditArtistForm({ artist: initialArtistData, isEditing }:
           {isTeamMember && ( // Sadece kadro üyesiyse sıralama göster
             <div>
               <label htmlFor="teamOrder" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Kadro Sıralaması (Opsiyonel, küçük sayı önce)</label>
-              <input type="number" name="teamOrder" id="teamOrder" value={teamOrder} onChange={(e) => setTeamOrder(e.target.value)} className="mt-1 ..."/>
+              <input type="number" name="teamOrder" id="teamOrder" value={teamOrder} onChange={(e) => setTeamOrder(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-gray-200"/>
             </div>
           )}
         </div>

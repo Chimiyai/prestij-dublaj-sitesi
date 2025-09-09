@@ -7,7 +7,7 @@ import AdminSidebar from './AdminSidebar'; // Sidebar bileşenini import ediyoru
 
 interface AdminPageLayoutProps {
   pageTitle: string;
-  breadcrumbs?: { label: string; href: string }[];
+  breadcrumbs: { label: string; href?: string; }[];
   children: React.ReactNode;
   backLink?: { href: string; label: string };
 }
@@ -43,13 +43,13 @@ const AdminPageLayout: React.FC<AdminPageLayoutProps> = ({
                 {breadcrumbs?.map((crumb, index) => (
                   <li key={crumb.href} className="flex items-center">
                     {index > 0 && <span className="mx-2 text-gray-400">/</span>}
-                    {index === breadcrumbs.length - 1 ? (
-                      <span className="text-gray-800 dark:text-gray-200 font-medium">{crumb.label}</span>
-                    ) : (
-                      <Link href={crumb.href} className="text-gray-600 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors">
-                        {crumb.label}
-                      </Link>
-                    )}
+                    {crumb.href ? (
+  <Link href={crumb.href} className="text-gray-600 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors">
+    {crumb.label}
+  </Link>
+) : (
+  <span className="text-gray-800 dark:text-gray-200 font-medium">{crumb.label}</span>
+)}
                   </li>
                 ))}
               </ol>
