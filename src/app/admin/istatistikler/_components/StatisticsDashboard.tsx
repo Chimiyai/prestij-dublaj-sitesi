@@ -19,8 +19,16 @@ function CustomBarChart({ title, data }: { title: string; data: { name: string; 
         data: data.map(item => ({ primary: item.name, secondary: item.count }))
     }], [data, title]);
 
-    const primaryAxis = React.useMemo((): AxisOptions<ChartDatum> => ({ getValue: datum => datum.primary }), []);
-    const secondaryAxes = React.useMemo((): AxisOptions<ChartDatum>[] => [{ getValue: datum => datum.secondary, elementType: 'bar' }], []);
+    const primaryAxis = React.useMemo((): AxisOptions<ChartDatum> => ({
+        getValue: datum => datum.primary,
+        scaleType: 'band'
+    }), []);
+    const secondaryAxes = React.useMemo((): AxisOptions<ChartDatum>[] => [{
+        getValue: datum => datum.secondary,
+        elementType: 'bar',
+        scaleType: 'linear',
+        min: 0
+    }], []);
 
     return (
         <Card className="shadow-md">
