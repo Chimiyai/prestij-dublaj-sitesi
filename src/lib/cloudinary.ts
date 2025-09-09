@@ -1,7 +1,6 @@
-// src/lib/cloudinary.ts (SİZİN KODUNUZUN DÜZELTİLMİŞ VE NİHAİ HALİ)
-
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
+// --- DEĞİŞİKLİK 1: `flags` özelliğini tipe ekliyoruz ---
 interface CloudinaryTransformations {
   width?: number;
   height?: number;
@@ -12,6 +11,7 @@ interface CloudinaryTransformations {
   radius?: string | number;
   effect?: string;
   resource_type?: 'image' | 'video' | 'raw';
+  flags?: string; // YENİ: Cloudinary flag'lerini desteklemek için
 }
 
 export function getCloudinaryImageUrlOptimized(
@@ -37,30 +37,26 @@ export function getCloudinaryImageUrlOptimized(
 
   const resourceType = transformations.resource_type || 'image';
   const baseUrl = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
+  
+  // --- DEĞİŞİKLİK 2: Mantığı, video için de flag'leri destekleyecek şekilde güncelliyoruz ---
+  const transParts: string[] = [];
 
-  // <<< MANTIKSAL DÜZELTME BURADA BAŞLIYOR <<<
-
-  // EĞER KAYNAK TİPİ VİDEO/SES İSE, HİÇBİR DÖNÜŞÜM UYGULAMA VE URL'İ HEMEN DÖNDÜR
-  if (resourceType === 'video') {
-    // Bu, en basit, en ham ve en güvenilir URL'dir.
-    return `${baseUrl}/${publicIdOrPath}`;
+  // Resimlere özel dönüşümler
+  if (resourceType === 'image') {
+    if (transformations.width) transParts.push(`w_${transformations.width}`);
+    if (transformations.height) transParts.push(`h_${transformations.height}`);
+    if (transformations.crop) transParts.push(`c_${transformations.crop}`);
+    if (transformations.gravity) transParts.push(`g_${transformations.gravity}`);
+    if (transformations.radius) transParts.push(`r_${transformations.radius}`);
+    transParts.push(`q_${transformations.quality || 'auto'}`);
+    transParts.push(`f_${transformations.format || 'auto'}`);
   }
 
-  // EĞER KAYNAK TİPİ VİDEO DEĞİLSE (YANİ IMAGE İSE), DÖNÜŞÜM MANTIĞINA DEVAM ET
-  const transParts: string[] = [];
-  
-  if (transformations.width) transParts.push(`w_${transformations.width}`);
-  if (transformations.height) transParts.push(`h_${transformations.height}`);
-  if (transformations.crop) transParts.push(`c_${transformations.crop}`);
-  if (transformations.gravity) transParts.push(`g_${transformations.gravity}`);
-  if (transformations.radius) transParts.push(`r_${transformations.radius}`);
-  
-  // Bu satırlar artık sadece resimler için çalışacak
-  transParts.push(`q_${transformations.quality || 'auto'}`);
-  transParts.push(`f_${transformations.format || 'auto'}`);
-  
+  // Hem resim hem video için geçerli olabilecek dönüşümler
+  if (transformations.flags) transParts.push(`fl_${transformations.flags}`);
+  // (Buraya gelecekte başka ortak dönüşümler de eklenebilir)
+
   const transformString = transParts.join(',');
 
   return `${baseUrl}/${transformString ? transformString + '/' : ''}${publicIdOrPath}`;
-  // >>> MANTIKSAL DÜZELTME BURADA BİTİYOR >>>
 }
