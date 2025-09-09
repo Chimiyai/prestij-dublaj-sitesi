@@ -52,8 +52,9 @@ async function getProjectContributions(projectSlug: string) {
   };
 }
 
-export default async function ProjectContributionsPage({ params }: { params: { slug: string } }) {
-  const data = await getProjectContributions(params.slug);
+export default async function ProjectContributionsPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params; // await ile bekle
+  const data = await getProjectContributions(slug);
 
   if (!data) {
     notFound();

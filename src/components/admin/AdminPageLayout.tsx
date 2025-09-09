@@ -7,7 +7,7 @@ import AdminSidebar from './AdminSidebar'; // Sidebar bileşenini import ediyoru
 
 interface AdminPageLayoutProps {
   pageTitle: string;
-  breadcrumbs: { label: string; href?: string; }[];
+  breadcrumbs?: { label: string; href?: string; }[];
   children: React.ReactNode;
   backLink?: { href: string; label: string };
 }

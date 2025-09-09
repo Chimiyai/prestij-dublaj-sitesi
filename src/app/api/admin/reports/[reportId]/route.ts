@@ -27,15 +27,16 @@ async function checkAuth(): Promise<NextResponse | null> {
 // --- PUT: Raporun Durumunu Güncelle ---
 export async function PUT(
   request: NextRequest, 
-  { params }: { params: { reportId: string } }
+  { params }: { params: Promise<{ reportId: string }> }
 ) {
+  const { reportId } = await params;
   // <<< 2. DEĞİŞİKLİK: Merkezi yetki kontrol fonksiyonunu kullan
   const authError = await checkAuth();
   if (authError) return authError;
   // -----------------------------------------------------------
   
-  const reportId = parseInt(params.reportId, 10);
-  if (isNaN(reportId)) {
+  const parsedReportId = parseInt(reportId, 10);
+  if (isNaN(parsedReportId)) {
     return NextResponse.json({ message: 'Geçersiz ID formatı.' }, { status: 400 });
   }
 
@@ -48,13 +49,13 @@ export async function PUT(
     }
 
     const updatedReport = await prisma.userReport.update({
-      where: { id: reportId },
+      where: { id: parsedReportId },
       data: { status: parsedBody.data.status },
     });
 
     return NextResponse.json(updatedReport);
   } catch (error) {
-    console.error(`Rapor (ID: ${reportId}) durumu güncellenirken hata:`, error);
+    console.error(`Rapor (ID: ${parsedReportId}) durumu güncellenirken hata:`, error);
     return NextResponse.json({ message: "Rapor durumu güncellenirken bir hata oluştu." }, { status: 500 });
   }
 }
@@ -62,23 +63,24 @@ export async function PUT(
 // --- DELETE: Raporu Sil ---
 export async function DELETE(
   request: NextRequest, 
-  { params }: { params: { reportId: string } }
+  { params }: { params: Promise<{ reportId: string }> }
 ) {
+  const { reportId } = await params;
   // <<< 3. DEĞİŞİKLİK: Merkezi yetki kontrol fonksiyonunu kullan
   const authError = await checkAuth();
   if (authError) return authError;
   // -----------------------------------------------------------
 
-  const reportId = parseInt(params.reportId, 10);
-  if (isNaN(reportId)) {
+  const parsedReportId = parseInt(reportId, 10);
+  if (isNaN(parsedReportId)) {
     return NextResponse.json({ message: 'Geçersiz ID formatı.' }, { status: 400 });
   }
 
   try {
-    await prisma.userReport.delete({ where: { id: reportId } });
+    await prisma.userReport.delete({ where: { id: parsedReportId } });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error(`Rapor (ID: ${reportId}) silinirken hata:`, error);
+    console.error(`Rapor (ID: ${parsedReportId}) silinirken hata:`, error);
     return NextResponse.json({ message: "Rapor silinirken bir hata oluştu." }, { status: 500 });
   }
 }

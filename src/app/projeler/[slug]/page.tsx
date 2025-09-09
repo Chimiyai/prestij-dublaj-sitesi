@@ -133,9 +133,10 @@ async function getUserSpecificData(userId: number | undefined, projectId: number
 }
 
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const resolved = await params;
   const project = await prisma.project.findUnique({
-    where: { slug: params.slug },
+    where: { slug: resolved.slug },
     include: { categories: { select: { category: { select: { name: true } } } } }
   });
   if (!project) return { title: 'Proje Bulunamadı' };
@@ -162,14 +163,15 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 
-export default async function ProjectDetailPageServer({ params }: { params: { slug:string } }) {
+export default async function ProjectDetailPageServer({ params }: { params: Promise<{ slug:string }> }) {
+  const resolved = await params;
   const session = await getServerSession(authOptions);
 
   // <<< 1. DEĞİŞİKLİK: `userId`'yi ÖNCE tanımla <<<
   const userId = session?.user?.id ? parseInt(session.user.id) : undefined;
 
   // <<< 2. DEĞİŞİKLİK: Şimdi `userId`'yi GÜVENLE kullanabiliriz <<<
-  const project = await getProjectDetails(params.slug, userId);
+  const project = await getProjectDetails(resolved.slug, userId);
 
   if (!project) {
     notFound();

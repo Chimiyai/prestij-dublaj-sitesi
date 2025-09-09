@@ -7,8 +7,9 @@ import { authOptions } from '@/lib/authOptions';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { suggestionId: string } }
+  { params }: { params: Promise<{ suggestionId: string }> }
 ) {
+  const { suggestionId } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ message: 'Oy vermek için giriş yapmalısınız.' }, { status: 401 });
@@ -16,9 +17,9 @@ export async function POST(
 
   try {
     const userId = parseInt(session.user.id);
-    const suggestionId = parseInt(params.suggestionId);
+    const parsedSuggestionId = parseInt(suggestionId);
 
-    if (isNaN(suggestionId)) {
+    if (isNaN(parsedSuggestionId)) {
       return NextResponse.json({ message: 'Geçersiz Öneri ID.' }, { status: 400 });
     }
 
@@ -28,7 +29,7 @@ export async function POST(
     await prisma.communitySuggestionVote.create({
       data: {
         userId: userId,
-        suggestionId: suggestionId,
+        suggestionId: parsedSuggestionId,
       }
     });
 

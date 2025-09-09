@@ -8,21 +8,22 @@ import { UserRole } from '@prisma/client';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { dialogueId: string } }
+  { params }: { params: Promise<{ dialogueId: string }> }
 ) {
+  const { dialogueId } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.role || ![UserRole.ADMIN, UserRole.MODERATOR].includes(session.user.role)) {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 
   try {
-    const dialogueId = parseInt(params.dialogueId);
-    if (isNaN(dialogueId)) {
+    const parsedDialogueId = parseInt(dialogueId);
+    if (isNaN(parsedDialogueId)) {
       return NextResponse.json({ message: 'Geçersiz Diyalog ID.' }, { status: 400 });
     }
 
     await prisma.characterDialogue.delete({
-      where: { id: dialogueId },
+      where: { id: parsedDialogueId },
     });
 
     return new NextResponse(null, { status: 204 }); // Başarılı, içerik yok

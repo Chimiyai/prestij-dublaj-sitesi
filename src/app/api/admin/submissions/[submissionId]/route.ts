@@ -23,16 +23,17 @@ const updateStatusSchema = z.object({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { submissionId: string } }
+  { params }: { params: Promise<{ submissionId: string }> }
 ) {
+  const { submissionId } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.role || ![UserRole.ADMIN, UserRole.MODERATOR].includes(session.user.role)) {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 
   try {
-    const submissionId = parseInt(params.submissionId, 10);
-    if (isNaN(submissionId)) {
+    const parsedSubmissionId = parseInt(submissionId, 10);
+    if (isNaN(parsedSubmissionId)) {
       return NextResponse.json({ message: 'Geçersiz Katkı ID formatı.' }, { status: 400 });
     }
     
@@ -47,7 +48,7 @@ export async function PATCH(
     const { status } = parsedBody.data;
 
     const submissionToUpdate = await prisma.voiceSubmission.findUnique({
-        where: { id: submissionId }
+        where: { id: parsedSubmissionId }
     });
     if (!submissionToUpdate) {
         return NextResponse.json({ message: 'Güncellenecek katkı bulunamadı.' }, { status: 404 });
@@ -62,7 +63,7 @@ export async function PATCH(
     }
 
     const updatedSubmission = await prisma.voiceSubmission.update({
-      where: { id: submissionId },
+      where: { id: parsedSubmissionId },
       data: { status: status },
       include: {
           user: { select: { username: true } },

@@ -58,8 +58,9 @@ async function getArtist(artistId: number) {
 }
 
 // --- Metadata Fonksiyonu (generateMetadata) ---
-export async function generateMetadata({ params }: { params: { artistId: string } }): Promise<Metadata> {
-  const artistIdAsNumber = parseInt(params.artistId, 10);
+export async function generateMetadata({ params }: { params: Promise<{ artistId: string }> }): Promise<Metadata> {
+  const { artistId } = await params; // await ile bekle
+  const artistIdAsNumber = parseInt(artistId, 10);
   if (isNaN(artistIdAsNumber)) {
     return { title: 'Geçersiz ID | Admin Paneli' };
   }
@@ -77,8 +78,9 @@ export async function generateMetadata({ params }: { params: { artistId: string 
 }
 
 // --- Sayfa Bileşeni (EditSanatciPage) ---
-export default async function EditSanatciPage({ params }: { params: { artistId: string } }) {
-  const artistIdAsNumber = parseInt(params.artistId, 10);
+export default async function EditSanatciPage({ params }: { params: Promise<{ artistId: string }> }) {
+  const { artistId } = await params; // await ile bekle
+  const artistIdAsNumber = parseInt(artistId, 10);
 
   if (isNaN(artistIdAsNumber)) {
     notFound();

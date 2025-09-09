@@ -109,9 +109,10 @@ async function getArtistDetails(artistIdParam: string, currentUserId?: number): 
 
 
 export async function generateMetadata(
-  { params }: { params: { artistId: string } }
+  { params }: { params: Promise<{ artistId: string }> }
 ): Promise<Metadata> {
-  const artistId = parseInt(params.artistId, 10);
+  const resolved = await params;
+  const artistId = parseInt(resolved.artistId, 10);
   if (isNaN(artistId)) {
     return { title: 'Sanatçı Bulunamadı' };
   }

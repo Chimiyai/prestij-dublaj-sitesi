@@ -14,16 +14,17 @@ const updateStatusSchema = z.object({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { suggestionId: string } }
+  { params }: { params: Promise<{ suggestionId: string }> }
 ) {
+  const { suggestionId } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.role || ![UserRole.ADMIN, UserRole.MODERATOR].includes(session.user.role)) {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 
   try {
-    const suggestionId = parseInt(params.suggestionId);
-    if (isNaN(suggestionId)) {
+    const parsedSuggestionId = parseInt(suggestionId);
+    if (isNaN(parsedSuggestionId)) {
       return NextResponse.json({ message: 'Geçersiz Öneri ID.' }, { status: 400 });
     }
 
@@ -37,7 +38,7 @@ export async function PATCH(
 
     // Önerinin durumunu güncelle
     const updatedSuggestion = await prisma.communitySuggestion.update({
-      where: { id: suggestionId },
+      where: { id: parsedSuggestionId },
       data: { status: status },
     });
 

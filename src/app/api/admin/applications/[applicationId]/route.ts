@@ -17,21 +17,21 @@ cloudinary.config({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { applicationId: string } }
+  { params }: { params: Promise<{ applicationId: string }> }
 ) {
+  const { applicationId } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.role || ![UserRole.ADMIN, UserRole.MODERATOR].includes(session.user.role)) {
     return NextResponse.json({ message: 'Yetkisiz erişim' }, { status: 403 });
   }
 
-  const { applicationId } = params;
   const { status } = await request.json();
 
   if (!applicationId || !status || !['APPROVED', 'REJECTED'].includes(status)) {
     return NextResponse.json({ message: 'Geçersiz istek verisi' }, { status: 400 });
   }
 
-  const appId = parseInt(params.applicationId);
+  const appId = parseInt(applicationId);
 
   try {
     if (status === 'APPROVED') {
