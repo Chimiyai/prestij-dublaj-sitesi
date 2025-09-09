@@ -1,0 +1,18 @@
+# docker-compose.yml
+
+version: '3.8'
+services:
+  db:
+    image: postgres:15-alpine  # Hafif bir PostgreSQL 15 imajı kullanıyoruz
+    restart: always            # Docker yeniden başladığında konteyner de başlasın
+    environment:
+      POSTGRES_USER: prestij_user_dev  # Yerel veritabanı kullanıcı adınız
+      POSTGRES_PASSWORD: 450CHI810mi1155YA # Yerel şifreniz (güçlü bir şey seçin)
+      POSTGRES_DB: prestij_dublaj_dev     # Yerel veritabanı adınız
+    ports:
+      - "5433:5432"            # Bilgisayarınızın 5433 portunu, konteynerin 5432 portuna bağlıyoruz
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Veritabanı verilerinin kalıcı olmasını sağlar
+
+volumes:
+  postgres_data:
