@@ -150,14 +150,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title, description, keywords,
     openGraph: {
       title, description,
-      url: `https://www.prestijstudio.com/projeler/${project.slug}`, // <<< KENDİ DOMAIN ADINIZI KULLANIN
+      url: `https://www.prestijstudio.com/projeler/${project.slug}`,
       siteName: 'PrestiJ',
-      images: [{ url: ogImageUrl || 'https://www.prestijstudio.com/images/default-og.jpg', width: 1200, height: 630 }], // <<< VARSAYILAN RESİM YOLUNU AYARLAYIN
+      images: [{ url: ogImageUrl || 'https://www.prestijstudio.com/images/default-og.jpg', width: 1200, height: 630 }],
       locale: 'tr_TR', type: 'website',
     },
     twitter: {
       card: 'summary_large_image', title, description,
-      images: [ogImageUrl || 'https://www.prestijstudio.com/images/default-og.jpg'], // <<< VARSAYILAN RESİM YOLUNU AYARLAYIN
+      images: [ogImageUrl || 'https://www.prestijstudio.com/images/default-og.jpg'],
     },
   };
 }
