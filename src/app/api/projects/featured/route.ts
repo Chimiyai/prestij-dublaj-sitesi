@@ -32,7 +32,7 @@ export async function GET() {
       releaseDate: featuredProject.releaseDate?.toISOString(),
     };
 
-    return NextResponse.json(responseData);
+    return NextResponse.json({ projects: [responseData] });
 
   } catch (error) {
     console.error("Öne çıkan proje API hatası:", error);

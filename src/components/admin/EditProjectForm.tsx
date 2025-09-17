@@ -17,6 +17,7 @@ import ProjectAssignmentsManager, {
   // CharacterOption as AssignmentManagerCharacterOption // Gerekirse diğerlerini de alias ile al
 } from './ProjectAssignmentsManager';
 import ProjectPublishSettings from './ProjectPublishSettings';
+import ModUploader from './ModUploader';
 
 // Tipler
 export type ProjectTypeEnum = 'oyun' | 'anime';
@@ -477,6 +478,14 @@ export default function EditProjectForm({
           price={price} onPriceChange={setPrice}
           currency={currency} onCurrencyChange={setCurrency}
           errors={errors}
+        />
+      )}
+
+{isEditing && initialProjectData?.id && initialProjectData?.slug && (
+        <ModUploader
+            projectId={initialProjectData.id}
+            projectSlug={initialProjectData.slug}
+            currentDownloadUrl={initialProjectData.externalWatchUrl || null}
         />
       )}
 

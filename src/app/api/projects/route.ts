@@ -1,61 +1,50 @@
 // src/app/api/projects/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { Prisma } from '@prisma/client'; // Prisma tiplerini import et
+import { Prisma } from '@prisma/client';
+import jwt from 'jsonwebtoken';
+
+interface UserPayload {
+  userId: number;
+}
 
 export const dynamic = 'force-dynamic';
 
-// Prisma'dan dönen proje için bir tip (API'den dönen veri yapısıyla eşleşmeli)
-interface PrismaCategory {
-  id: number; // Şemanızda Int, bu yüzden number olmalı
-  name: string;
-  slug: string;
-}
-
-interface ApiProjectResponseItem { // Dönen son veri yapısı için tip
-  id: number; // Şemanızda Int
-  slug: string;
-  title: string;
-  type: string;
-  bannerImagePublicId: string | null;
-  coverImagePublicId: string | null;
-  description: string | null;
-  releaseDate: Date | null;
-  createdAt: Date;
-  likeCount: number; // Sayısal değerler
-  dislikeCount: number;
-  favoriteCount: number;
-  // viewCount?: number; // Gerekirse
-  // averageRating?: number; // Gerekirse
-  categories: PrismaCategory[]; // Sadece kategori bilgilerini içeren bir dizi
-}
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  console.log(`CLIENT API /api/projects GET. URL: ${request.url}`);
-
-  const limitParam = searchParams.get('limit');
-  const typeFilter = searchParams.get('type')?.toLowerCase();
-  const categoryFilter = searchParams.get('category');
-  const sortByParam = searchParams.get('sortBy');
-  const titleContainsQuery = searchParams.get('title_contains')?.trim();
-
-  let take: number | undefined = undefined;
-  if (limitParam) {
-    const parsed = parseInt(limitParam, 10);
-    if (!isNaN(parsed) && parsed > 0) take = parsed;
+  
+  let userId: number | undefined;
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    try {
+      const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET!) as UserPayload;
+      userId = decoded.userId;
+    } catch (e) {
+      console.warn("Geçersiz token alındı, yoksayılıyor.");
+    }
   }
 
-  // orderBy için Prisma tipini kullanalım
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const limit = parseInt(searchParams.get('limit') || '20', 10);
+  const skip = (page - 1) * limit;
+  
+  const typeFilter = searchParams.get('type')?.toLowerCase();
+  const sortByParam = searchParams.get('sortBy');
+  const titleContainsQuery = searchParams.get('title_contains')?.trim() || searchParams.get('q')?.trim();
+  const priceFilter = searchParams.get('price');
+  const libraryStatus = searchParams.get('libraryStatus');
+  const categoriesFilter = searchParams.get('categories'); // Sadece bir tane tanım kalacak
+
   let orderBy: Prisma.ProjectOrderByWithRelationInput | Prisma.ProjectOrderByWithRelationInput[] = [{ createdAt: 'desc' }];
 
   if (sortByParam) {
     console.log(`API orderByParam received: ${sortByParam}`);
     if (sortByParam === 'popular') {
       orderBy = [
-        { favoriteCount: 'desc' }, // Şemanızdaki doğru alan adı
-        { likeCount: 'desc' },     // Şemanızdaki doğru alan adı
-        { viewCount: 'desc' },     // Şemanızdaki doğru alan adı
+        { favoriteCount: 'desc' },
+        { likeCount: 'desc' },
+        { viewCount: 'desc' },
         { createdAt: 'desc' },
       ];
     } else if (sortByParam === 'newest') {
@@ -63,7 +52,7 @@ export async function GET(request: NextRequest) {
     } else if (sortByParam === 'oldest') {
       orderBy = { createdAt: 'asc' };
     } else if (sortByParam === 'likes') {
-      orderBy = { likeCount: 'desc' }; // Şemanızdaki doğru alan adı
+      orderBy = { likeCount: 'desc' };
     } else if (sortByParam === 'titleAsc') {
       orderBy = { title: 'asc' };
     } else if (sortByParam === 'titleDesc') {
@@ -71,37 +60,47 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // where için Prisma tipini kullanalım
   const where: Prisma.ProjectWhereInput = {
     isPublished: true,
   };
 
   if (typeFilter === 'oyun' || typeFilter === 'anime') {
-    // VERİTABANINIZDAKİ 'type' ALANININ DEĞERİYLE EŞLEŞTİĞİNDEN EMİN OLUN
-    // Örn: 'oyun' veya 'Oyun'
     where.type = typeFilter;
   }
+  
+  // --- HATA DÜZELTME: Tekrarlanan categoriesFilter bloğu kaldırıldı ---
+  // Sadece bu blok kalacak
+  if (categoriesFilter) {
+    const slugs = categoriesFilter.split(',').filter(slug => slug.trim() !== '');
+    if (slugs.length > 0) {
+      where.categories = { some: { category: { slug: { in: slugs } } } };
+    }
+  }
 
-  if (categoryFilter && categoryFilter !== 'all') {
-    where.categories = { some: { category: { slug: categoryFilter } } };
+  if (priceFilter === 'free') {
+    where.price = null;
+  } else if (priceFilter === 'paid') {
+    where.price = { not: null };
   }
 
   if (titleContainsQuery) {
-    where.title = { contains: titleContainsQuery };
-    // SQLite için 'insensitive' mode doğrudan desteklenmeyebilir.
-    // Eğer sorun olursa, LOWER() kullanmanız veya Prisma'nın farklı bir çözümünü aramanız gerekebilir.
-    // Veya client tarafında filtreleme yapabilirsiniz.
+    where.title = { contains: titleContainsQuery, mode: 'insensitive' };
   }
 
-  console.log('CLIENT API Prisma Query:', { where, orderBy, take });
+  if (userId && libraryStatus) {
+    if (libraryStatus === 'in') {
+      where.ownedByUsers = { some: { userId: userId } };
+    } else if (libraryStatus === 'not_in') {
+      where.ownedByUsers = { none: { userId: userId } };
+    }
+  }
 
   try {
-    // Prisma'dan dönecek tipin ne olacağını biliyoruz, bu yüzden direkt kullanalım.
-    // Ancak `select` kullandığımız için Prisma tam tipi otomatik çıkaramayabilir, bu yüzden `any` kullanıp sonra map'leyebiliriz.
-    const projectsFromDB: any[] = await prisma.project.findMany({
+    const projectsFromDB = await prisma.project.findMany({
       where,
       orderBy,
-      take: take || undefined,
+      take: limit,
+      skip: skip,
       select: {
         id: true,
         slug: true,
@@ -112,14 +111,14 @@ export async function GET(request: NextRequest) {
         description: true,
         releaseDate: true,
         createdAt: true,
-        likeCount: true,      // DOĞRU ALAN ADI
-        dislikeCount: true,   // DOĞRU ALAN ADI
-        favoriteCount: true,  // DOĞRU ALAN ADI
-        viewCount: true,      // Eğer kullanacaksanız
-        averageRating: true,  // Eğer kullanacaksanız
+        likeCount: true,
+        dislikeCount: true,
+        favoriteCount: true,
+        viewCount: true,
+        averageRating: true,
         categories: {
           select: {
-            category: { // ProjectCategory -> category ilişkisi
+            category: {
               select: { id: true, name: true, slug: true }
             }
           }
@@ -127,8 +126,9 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Client'a göndereceğimiz son format
-    const responseProjects: ApiProjectResponseItem[] = projectsFromDB.map(p => ({
+    const totalResults = await prisma.project.count({ where });
+
+    const responseProjects = projectsFromDB.map(p => ({
       id: p.id,
       slug: p.slug,
       title: p.title,
@@ -141,24 +141,22 @@ export async function GET(request: NextRequest) {
       likeCount: p.likeCount ?? 0,
       dislikeCount: p.dislikeCount ?? 0,
       favoriteCount: p.favoriteCount ?? 0,
-      // viewCount: p.viewCount ?? 0, // Gerekirse
-      // averageRating: p.averageRating ?? 0, // Gerekirse
-      categories: p.categories.map((catRelation: any) => catRelation.category), // Sadece Category objelerini al
+      categories: p.categories.map((catRelation: any) => catRelation.category),
     }));
 
     console.log(`CLIENT API Successfully fetched ${responseProjects.length} projects.`);
-    return NextResponse.json(responseProjects);
+    return NextResponse.json({
+      projects: responseProjects,
+      totalResults: totalResults,
+      currentPage: page,
+      totalPages: Math.ceil(totalResults / limit),
+    });
 
   } catch (error) {
     console.error("CLIENT API Error in /api/projects GET:", error);
     let errorMessage = "Projeler getirilirken bir sunucu hatası oluştu.";
     if (error instanceof Error) {
         errorMessage = error.message;
-        console.error("Error details:", { name: error.name, message: error.message, stack: error.stack?.substring(0, 300) });
-         if ('code' in error) { // Prisma errors often have a code
-            console.error("Prisma Error Code:", (error as any).code);
-            if ('meta' in error) console.error("Prisma Error Meta:", (error as any).meta);
-        }
     }
     return NextResponse.json(
       { message: "Projeler getirilirken bir hata oluştu.", details: errorMessage },

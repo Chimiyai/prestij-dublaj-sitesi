@@ -27,7 +27,9 @@ async function fetchTopFavoriteProjects(): Promise<ApiBaseProject[]> {
   try {
     const res = await fetch('/api/projects/top-favorites');
     if (!res.ok) { console.error("Top favoriler yüklenemedi"); return []; }
-    return await res.json();
+    const data = await res.json();
+    return data.projects || [];
+
   } catch (e) { console.error("API Error fetchTopFavoriteProjects:", e); return []; }
 }
 
@@ -35,7 +37,9 @@ async function fetchLatestProjectsForSideList(): Promise<ApiBaseProject[]> {
   try {
     const res = await fetch('/api/projects?limit=4&orderBy=createdAt');
     if (!res.ok) { console.error("Yan liste projeleri yüklenemedi"); return []; }
-    return await res.json();
+    const data = await res.json();
+    return data.projects || [];
+    
   } catch (e) { console.error("API Error fetchLatestProjectsForSideList:", e); return []; }
 }
 

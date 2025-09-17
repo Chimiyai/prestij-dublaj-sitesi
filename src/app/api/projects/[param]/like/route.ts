@@ -1,26 +1,53 @@
-// src/app/api/projects/[projectId]/like/route.ts
+// src/app/api/projects/[param]/like/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/authOptions'; // Doğru yolu kontrol et
+import { authOptions } from '@/lib/authOptions';
+
+interface UserPayload {
+  userId: number;
+}
+
+// YENİ HİBRİT KİMLİK DOĞRULAMA FONKSİYONU
+async function getUserId(request: NextRequest): Promise<number | null> {
+  // 1. Yöntem: Bearer Token'ı kontrol et (Masaüstü Uygulaması için)
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    try {
+      const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET!) as UserPayload;
+      return decoded.userId;
+    } catch (e) {
+      // Geçersiz token ise null dön, session'ı denemeye devam etme
+      return null; 
+    }
+  }
+
+  // 2. Yöntem: Token yoksa, NextAuth Session Cookie'sini kontrol et (Web Sitesi için)
+  const session = await getServerSession(authOptions);
+  if (session?.user?.id) {
+    return parseInt(session.user.id);
+  }
+
+  // Hiçbir yöntem işe yaramazsa
+  return null;
+}
 
 // Projeyi beğenme (like)
 export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ projectId: string }> }
+  request: NextRequest, 
+  { params }: { params: Promise<{ param: string }> } 
 ) {
-  const resolvedParams = await params;
-  const projectIdString = resolvedParams.projectId;
-
-  if (!projectIdString) {  return NextResponse.json({ message: 'Eksik proje ID.' }, { status: 400 }); } // Kısaltılmış kontrol
+  const resolvedParams = await params; // Promise'i çöz
+  const projectIdString = resolvedParams.param;
   const projectId = parseInt(projectIdString, 10);
   if (isNaN(projectId)) { return NextResponse.json({ message: 'Geçersiz proje ID.' }, { status: 400 }); }
 
-  const session = await getServerSession(authOptions); // SESSION BURADA
-  if (!session?.user?.id) {
+  const userId = await getUserId(request);
+  if (!userId) {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 401 });
   }
-  const userId = parseInt(session.user.id); // USERID BURADA
 
   try {
     // Kullanıcı bu projeyi daha önce dislike etmiş mi diye kontrol et
@@ -83,23 +110,21 @@ export async function POST(
 
 // Beğeniyi (like) geri alma
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ projectId: string }> }
+  request: NextRequest, 
+  { params }: { params: Promise<{ param: string }> } 
 ) {
-  const resolvedParams = await params;
-  const projectIdString = resolvedParams.projectId;
-
-  if (!projectIdString) { return NextResponse.json({ message: 'Eksik proje ID.' }, { status: 400 }); }
+  const resolvedParams = await params; // Promise'i çöz
+  const projectIdString = resolvedParams.param;
   const projectId = parseInt(projectIdString, 10);
   if (isNaN(projectId)) { return NextResponse.json({ message: 'Geçersiz proje ID.' }, { status: 400 }); }
 
-  const session = await getServerSession(authOptions); // SESSION BURADA
-  if (!session?.user?.id) {
+  const userId = await getUserId(request);
+  if (!userId) {
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 401 });
   }
-  const userId = parseInt(session.user.id); // USERID BURADA
 
   try {
+
     const result = await prisma.$transaction(async (tx) => {
       // Öncelikle ilgili like kaydını silmemiz gerekiyor.
       // Eğer bu işlem hata verirse (örn. P2025 - Kayıt bulunamadı), zaten işlem başarısız olur.

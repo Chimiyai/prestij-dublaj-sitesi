@@ -74,7 +74,7 @@ export default function CountdownSection() {
           throw new Error('Veri çekilemedi');
         }
         const data = await res.json();
-        setProject(data);
+        setProject(data.projects[0] || null);
       } catch (error) {
         console.error("Öne çıkan proje çekilirken hata:", error);
         setProject(null);

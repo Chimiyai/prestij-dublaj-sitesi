@@ -1,11 +1,10 @@
-// src/app/indir/_components/DownloadPageClient.tsx (YENİ DOSYA)
-'use client'; // <<< BU DİREKTİF EN ÖNEMLİSİ
+// src/app/indir/_components/DownloadPageClient.tsx
+'use client';
 
 import Link from 'next/link';
 import { Download } from 'lucide-react';
 import { DownloadPageSlider } from './DownloadPageSlider';
 
-// page.tsx'den gelecek verilerin tipini tanımlayalım
 interface DownloadPageClientProps {
   stats: {
     totalDubbedGames: number;
@@ -17,12 +16,12 @@ interface DownloadPageClientProps {
     coverImagePublicId: string | null;
   }[];
   downloadLink: string;
+  version: string;
 }
 
-export function DownloadPageClient({ stats, projectsForSlider, downloadLink }: DownloadPageClientProps) {
+export function DownloadPageClient({ stats, projectsForSlider, downloadLink, version }: DownloadPageClientProps) {
   return (
     <div className="relative min-h-screen w-full overflow-hidden" style={{ backgroundColor: '#08060D' }}>
-      {/* Arka plan gradyanı ve desenleri */}
       <div className="absolute inset-0 z-0 opacity-40">
         <div className="absolute bottom-0 left-0 h-full w-full bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
       </div>
@@ -83,7 +82,7 @@ export function DownloadPageClient({ stats, projectsForSlider, downloadLink }: D
             <div className="mt-10">
               <Link href={downloadLink} className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg transition-all transform hover:scale-105">
                 <Download className="w-6 h-6" />
-                <span>Hemen İndir (v1.0)</span>
+                <span>Hemen İndir ({version})</span>
               </Link>
               <p className="text-xs text-gray-500 mt-3">Windows için | Ücretsiz</p>
             </div>

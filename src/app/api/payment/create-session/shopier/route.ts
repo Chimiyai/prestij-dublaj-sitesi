@@ -1,14 +1,52 @@
-// src/app/api/payment/create-session/shopier/route.ts (DÜZELTİLMİŞ HALİ)
+// src/app/api/payment/create-session/shopier/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import prisma from '@/lib/prisma';
 import { Shopier } from 'shopier-api';
+import jwt from 'jsonwebtoken'; // YENİ: jwt import et
+
+// YENİ: Diğer API'lardan kopyaladığımız hibrit kimlik doğrulama mantığı
+interface UserPayload {
+  userId: number;
+  email: string;
+  username: string;
+  // Gerekirse diğer alanlar
+}
+
+async function getAuthenticatedUser(request: NextRequest): Promise<UserPayload | null> {
+  // 1. Yöntem: Bearer Token (Masaüstü Uygulaması)
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    try {
+      const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET!) as UserPayload;
+      return decoded;
+    } catch (e) {
+      return null; 
+    }
+  }
+
+  // 2. Yöntem: Session Cookie (Web Sitesi)
+  const session = await getServerSession(authOptions);
+  if (session?.user?.id && session.user.email && session.user.username) {
+    return {
+      userId: parseInt(session.user.id),
+      email: session.user.email,
+      username: session.user.username
+    };
+  }
+
+  return null;
+}
+// --- BİTİŞ ---
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id || !session.user.email || !session.user.username) {
+  // Eski session mantığı yerine yeni hibrit fonksiyonu kullan
+  const user = await getAuthenticatedUser(request);
+
+  if (!user) {
     return NextResponse.json({ message: 'Giriş yapmalısınız.' }, { status: 401 });
   }
 
@@ -19,7 +57,6 @@ export async function POST(request: NextRequest) {
     }
 
     const project = await prisma.project.findUnique({ where: { id: projectId } });
-    const user = session.user;
 
     if (!project || !project.price || project.price <= 0) {
       return NextResponse.json({ message: 'Satın alınabilir bir ürün bulunamadı.' }, { status: 404 });
@@ -30,12 +67,11 @@ export async function POST(request: NextRequest) {
         process.env.SHOPIER_API_SECRET!
     );
 
-    // Bu ID, webhook'ta satın almayı tanımlamak için kullanılacak
-    const platformOrderId = `PRESTIJ-${projectId}-${user.id}-${Date.now()}`;
+    const platformOrderId = `PRESTIJ-${projectId}-${user.userId}-${Date.now()}`;
     
     shopier.setBuyer({
       platform_order_id: platformOrderId,
-      buyer_id_nr: user.id,
+      buyer_id_nr: String(user.userId), // String olması gerekebilir
       product_name: project.title,
       buyer_name: user.username,
       buyer_surname: '.',
@@ -57,8 +93,6 @@ export async function POST(request: NextRequest) {
       shipping_postcode: "34000"
     });
 
-    // --- BURASI DÜZELTİLDİ ---
-    // platformOrderId'ı generatePaymentHTML fonksiyonuna ilk parametre olarak ekledik.
     const paymentHTML = shopier.generatePaymentHTML(project.price);
 
     return NextResponse.json({ paymentHTML });

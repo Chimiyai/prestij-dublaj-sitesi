@@ -12,6 +12,7 @@ import UpdateUsernameForm from '@/components/profile/UpdateUsernameForm';
 import UpdateBioForm from '@/components/profile/UpdateBioForm';
 import UpdatePasswordForm from '@/components/profile/UpdatePasswordForm';
 import UpdateEmailForm from '@/components/profile/UpdateEmailForm';
+import RecoveryCodeManager from './RecoveryCodeManager';
 import toast from 'react-hot-toast';
 import { CldImage } from 'next-cloudinary';
 import { UserCircleIcon, PhotoIcon } from '@heroicons/react/24/outline';
@@ -315,7 +316,7 @@ export default function UserProfileForm({ user: initialUser }: UserProfileFormPr
                     <UpdatePasswordForm /> 
                 </div>
                 <div className="p-6 md:p-0 border-t border-gray-200 dark:border-gray-700">
-                    <UpdateEmailForm /> 
+                <RecoveryCodeManager />
                 </div>
             </div>
         </div>

@@ -1,4 +1,4 @@
-// src/app/(auth)/giris/page.tsx
+// src/components/auth/GirisPageClient.tsx
 "use client";
 
 import { Suspense } from 'react';
@@ -6,7 +6,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { signIn, useSession } from 'next-auth/react'; // signIn ve useSession
 import { useRouter, useSearchParams } from 'next/navigation'; // Yönlendirme ve query params için
-// import { EnvelopeIcon, LockClosedIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import RecoveryCodeModal from '@/components/auth/RecoveryCodeModal';
+import toast from 'react-hot-toast';
+
 
 export default function GirisPage() {
   const router = useRouter();
@@ -20,6 +22,11 @@ export default function GirisPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [generatedRecoveryCode, setGeneratedRecoveryCode] = useState('');
+
+
   // Eğer kullanıcı zaten giriş yapmışsa ana sayfaya yönlendir
   useEffect(() => {
     if (status === "authenticated") {
@@ -30,24 +37,27 @@ export default function GirisPage() {
   // Kayıt sonrası başarı mesajını göster
   useEffect(() => {
     const kayitDurumu = searchParams.get('kayit');
-    if (kayitDurumu === 'basarili') {
-      setSuccessMessage('Kaydınız başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.');
-      // İsteğe bağlı: URL'den query param'ı temizle
-      // router.replace('/giris', { scroll: false });
-    }
-    const nextAuthError = searchParams.get('error');
-    if (nextAuthError) {
-        // NextAuth'un redirect ile gönderdiği hataları yakala
-        // Örnek: CredentialsSignin, EmailSignin, vb.
-        // Bu hataları daha kullanıcı dostu mesajlara çevirebilirsiniz.
-        if (nextAuthError === "CredentialsSignin") {
-            setError("E-posta veya şifre hatalı. Lütfen bilgilerinizi kontrol edin.");
-        } else {
-            setError("Giriş sırasında bir hata oluştu. Lütfen tekrar deneyin.");
+    if (kayitDurumu === 'basarili' && status === 'authenticated') {
+      // Başarılı kayıt sonrası, kullanıcı artık giriş yapmış durumda.
+      // Şimdi onun için bir kurtarma kodu üretebiliriz.
+      const generateCode = async () => {
+        try {
+          // Bu isteği atabilmek için kullanıcının giriş yapmış olması GEREKİR.
+          const response = await fetch('/api/auth/generate-recovery', { method: 'POST' });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.message);
+          
+          setGeneratedRecoveryCode(data.recoveryCode);
+          setShowRecoveryModal(true);
+
+        } catch (error) {
+          toast.error("Kurtarma kodu alınamadı. Profil sayfanızdan daha sonra oluşturabilirsiniz.");
         }
+      };
+      generateCode();
     }
 
-  }, [searchParams, router]);
+  }, [searchParams, router, status]);
 
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -153,6 +163,11 @@ export default function GirisPage() {
               <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
             </button>
           </div>
+          <div className="flex items-center justify-end text-sm mt-5">
+          <Link href="/sifremi-unuttum" className="font-medium text-prestij-purple-light hover:text-prestij-purple hover:underline">
+            Şifreni mi unuttun?
+          </Link>
+        </div>
         </div>
 
         {error && (
@@ -182,6 +197,11 @@ export default function GirisPage() {
           Kayıt Ol
         </Link>
       </p>
+      <RecoveryCodeModal 
+        isOpen={showRecoveryModal}
+        onClose={() => setShowRecoveryModal(false)}
+        recoveryCode={generatedRecoveryCode}
+      />
     </div>
   );
 }

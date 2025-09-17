@@ -5,28 +5,39 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
-// API'den gelecek proje verisi için basit bir tip (sadece linkler için gerekli)
+// API'den gelecek proje verisi için basit bir tip
 interface FooterProjectLink {
   slug: string;
   title: string;
-  type: 'oyun' | 'anime' | string; // API'den 'oyun' veya 'anime' olarak gelmeli
+  type: 'oyun' | 'anime' | string;
 }
 
-// API'den veri çekme fonksiyonu
+// --- DÜZELTİLMİŞ VERİ ÇEKME FONKSİYONU ---
 async function fetchLatestFooterItems(type: 'oyun' | 'anime', limit: number): Promise<FooterProjectLink[]> {
   try {
-    const res = await fetch(`/api/projects?type=${type}&limit=${limit}&orderBy=createdAt`);
+    // 1. HATA DÜZELTİLDİ: `orderBy=createdAt` yerine `sortBy=newest` kullanıldı.
+    const res = await fetch(`/api/projects?type=${type}&limit=${limit}&sortBy=newest`);
+    
     if (!res.ok) {
       console.error(`Footer için ${type} verisi çekilemedi, status: ${res.status}`);
       return [];
     }
+    
     const data = await res.json();
-    // Sadece slug, title ve type alalım (API daha fazla alan dönebilir)
-    return data.map((item: any) => ({
-      slug: item.slug,
-      title: item.title,
-      type: item.type,
-    }));
+
+    // 2. HATA DÜZELTİLDİ: Dönen 'data' nesnesinin içindeki 'projects' dizisi map'lendi.
+    // data.projects'in bir dizi olduğundan emin olalım.
+    if (data && Array.isArray(data.projects)) {
+      return data.projects.map((item: any) => ({
+        slug: item.slug,
+        title: item.title,
+        type: item.type,
+      }));
+    } else {
+      console.error(`API'den ${type} için beklenen 'projects' dizisi gelmedi.`);
+      return [];
+    }
+
   } catch (error) {
     console.error(`Footer için ${type} fetch hatası:`, error);
     return [];
@@ -46,7 +57,7 @@ const Footer = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const 작업 = async () => { // 'loadData' yerine Korece bir kelime kullandım, isterseniz değiştirebilirsiniz :)
+    const loadData = async () => {
       setIsLoading(true);
       try {
         const [games, animes] = await Promise.all([
@@ -61,13 +72,12 @@ const Footer = () => {
         setIsLoading(false);
       }
     };
-    작업();
+    loadData();
   }, []);
 
-
   const aboutLinks = [
-    { label: "Kadromuz", href: "/kadromuz" }, // Gerçek yolları kullanın
-    { label: "Site Hakkında", href: "/hakkimizda" }, // Gerçek yolları kullanın
+    { label: "Kadromuz", href: "/kadromuz" },
+    { label: "Site Hakkında", href: "/hakkimizda" },
   ];
   const socialLinks = [
     { label: "Instagram", href: "https://www.instagram.com/prestij_studios/", iconClass: "fab fa-instagram" },
@@ -75,16 +85,18 @@ const Footer = () => {
     { label: "Discord", target:'_blank', href: "https://discord.gg/9hX4GJtEsX", iconClass: "fab fa-discord" },
     { label: "Youtube", target:'_blank', href: "https://www.youtube.com/channel/UCuChIjgg-T3q1V6sPpPApdQ", iconClass: "fab fa-youtube" },
   ];
-
-  // tailwind.config.js'de bu renklerin tanımlı olması beklenir:
-  // bg-footer-bg, text-footer-text, border-footer-border, text-footer-main-title-text,
-  // text-footer-column-title-text, text-footer-link-text, text-footer-link-hover-text,
-  // text-footer-contact-label-text, text-footer-social-icon, text-footer-social-icon-hover,
-  // text-footer-bottom-bar-text, text-footer-chimiya-link, text-footer-chimiya-link-hover
+  
+  // DİKKAT: Projeler sayfanızın yolu /projeler/[slug] şeklinde. 
+  // Oyunlar ve Animeler için ayrı yollarınız varsa (/oyunlar/[slug]) bu doğrudur.
+  // Eğer tek bir proje yolu varsa, href'i `/projeler/${link.slug}` olarak değiştirmelisiniz.
+  // Şimdilik dosya yapınıza göre bu şekilde bırakıyorum.
+  const getProjectHref = (type: string, slug: string) => {
+    // Proje detay sayfanızın yolu `/projeler/[slug]` olduğu için bu şekilde olmalı.
+    return `/projeler/${slug}`;
+  };
 
   return (
-    <footer id="mainFooter" className="bg-footer-bg text-footer-text text-sm pt-10"> {/* text-footer-base yerine text-sm */}
-      {/* Üst Bar */}
+    <footer id="mainFooter" className="bg-footer-bg text-footer-text text-sm pt-10">
       <div className="footer-top-bar border-b border-footer-border pb-6 mb-8">
         <div className="container mx-auto px-4">
           <Link href="/" className="inline-block">
@@ -94,23 +106,18 @@ const Footer = () => {
           </Link>
         </div>
       </div>
-
-      {/* Ana İçerik Alanı */}
       <div className="container mx-auto footer-content-container px-4 flex flex-wrap justify-between gap-x-6 gap-y-8 pb-10">
-        {/* Logo Sütunu */}
         <div className="footer-logo-column flex-shrink-0 w-full sm:w-auto mb-6 sm:mb-0 flex justify-center sm:justify-start">
           <Link href="/" className="inline-block">
             <Image 
-              src="/images/logo-placeholder.png" // Gerçek logo yolunuzu kullanın
+              src="/images/logo-placeholder.png"
               alt="PrestiJ Logo" 
               width={120} 
               height={120}
-              className="footer-logo-img w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] object-contain" // object-contain or object-cover
+              className="footer-logo-img w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] object-contain"
             />
           </Link>
         </div>
-
-        {/* Link Sütunları */}
         <div className="footer-links-column flex-1 min-w-[150px] xs:min-w-[170px] sm:min-w-[180px]">
           <h4 className="footer-column-title text-sm font-semibold text-footer-column-title-text mb-4 uppercase tracking-wider">OYUNLAR</h4>
           {isLoading ? (
@@ -122,7 +129,7 @@ const Footer = () => {
               {gameLinks.map(link => (
                 <li key={link.slug}>
                   <Link 
-                    href={`/oyunlar/${link.slug}`} // Dinamik URL
+                    href={getProjectHref(link.type, link.slug)} // Dinamik URL
                     className="text-footer-link-text hover:text-footer-link-hover-text hover:underline transition-colors text-xs sm:text-sm"
                     title={link.title}
                   >
@@ -135,7 +142,6 @@ const Footer = () => {
             <p className="text-xs text-gray-500">Henüz oyun yok.</p>
           )}
         </div>
-
         <div className="footer-links-column flex-1 min-w-[150px] xs:min-w-[170px] sm:min-w-[180px]">
           <h4 className="footer-column-title text-sm font-semibold text-footer-column-title-text mb-4 uppercase tracking-wider">ANİMELER</h4>
           {isLoading ? (
@@ -147,7 +153,7 @@ const Footer = () => {
               {animeLinks.map(link => (
                 <li key={link.slug}>
                   <Link 
-                    href={`/animeler/${link.slug}`} // Dinamik URL
+                    href={getProjectHref(link.type, link.slug)} // Dinamik URL
                     className="text-footer-link-text hover:text-footer-link-hover-text hover:underline transition-colors text-xs sm:text-sm"
                     title={link.title}
                   >
@@ -160,7 +166,6 @@ const Footer = () => {
             <p className="text-xs text-gray-500">Henüz anime yok.</p>
           )}
         </div>
-
         <div className="footer-links-column flex-1 min-w-[150px] xs:min-w-[170px] sm:min-w-[180px]">
           <h4 className="footer-column-title text-sm font-semibold text-footer-column-title-text mb-4 uppercase tracking-wider">HAKKIMIZDA</h4>
           <ul className="space-y-2.5">
@@ -173,30 +178,26 @@ const Footer = () => {
             ))}
           </ul>
         </div>
-
-        {/* İletişim Sütunu */}
         <div className="footer-contact-column flex-1 min-w-[200px] xs:min-w-[220px]">
           <h4 className="footer-column-title text-sm font-semibold text-footer-column-title-text mb-4 uppercase tracking-wider">İLETİŞİM</h4>
           <div>
-            <p className="contact-label text-footer-contact-label-text text-xs mb-2">Sosyal Medya</p> {/* text-footer-contact-label-size kaldırıldı, direkt text-xs vb. */}
-            <div className="social-icons-footer flex items-center gap-3.5 mb-4"> {/* text-footer-social-icon-size kaldırıldı */}
+            <p className="contact-label text-footer-contact-label-text text-xs mb-2">Sosyal Medya</p>
+            <div className="social-icons-footer flex items-center gap-3.5 mb-4">
               {socialLinks.map(social => (
                 <Link key={social.label} href={social.href} aria-label={social.label} target="_blank" rel="noopener noreferrer"
-                   className="text-footer-social-icon hover:text-footer-social-icon-hover hover:scale-110 transition-all text-lg"> {/* ikon boyutu text-lg */}
+                   className="text-footer-social-icon hover:text-footer-social-icon-hover hover:scale-110 transition-all text-lg">
                   <i className={social.iconClass}></i>
                 </Link>
               ))}
             </div>
             <p className="contact-label text-footer-contact-label-text text-xs mb-1 mt-4">E-Mail</p>
             <a href="mailto:iletisim@prestijstudio.com" className="email-link text-footer-link-text hover:text-footer-link-hover-text hover:underline font-medium transition-colors break-all text-xs sm:text-sm">
-              iletisim@prestijstudio.com {/* Gerçek mail adresi */}
+              iletisim@prestijstudio.com
             </a>
           </div>
         </div>
       </div>
-
-      {/* Alt Bar */}
-      <div className="footer-bottom-bar border-t border-footer-border py-5 text-xs text-footer-bottom-bar-text"> {/* text-footer-bottom-bar-text-size kaldırıldı */}
+      <div className="footer-bottom-bar border-t border-footer-border py-5 text-xs text-footer-bottom-bar-text">
         <div className="container mx-auto footer-bottom-content px-4 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
           <div className="copyright-text-wrapper text-center sm:text-left">
             <p className="copyright-text">© {year} PrestiJ Studio Tüm Hakları Saklıdır.</p>

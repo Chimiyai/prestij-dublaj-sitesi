@@ -50,8 +50,8 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
       if (!response.ok) {
         throw new Error('İçerikler yüklenirken bir hata oluştu.');
       }
-      const data: ApiProjectPopular[] = await response.json();
-      setResults(data);
+      const data = await response.json();
+      setResults(data.projects || []);
     } catch (err: any) {
       setError(err.message);
       setResults([]);

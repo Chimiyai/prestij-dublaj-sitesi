@@ -3,25 +3,25 @@
 
 import { useState, useEffect, useCallback, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Category, Project as PrismaProjectType } from '@prisma/client'; // Prisma'dan Project tipini al
+import { Category, Project as PrismaProjectType } from '@prisma/client';
 import toast from 'react-hot-toast';
 
-import FilterSidebar from './FilterSidebar';         // YENİ YOL
-import ProjectGrid from './ProjectGrid';             // YENİ YOL
+import FilterSidebar from './FilterSidebar';
+import ProjectGrid from './ProjectGrid';
 import SortDropdown, { SortOptionItem } from './SortDropdown';
-import Pagination from '@/components/ui/Pagination'; // Doğru yolu kontrol et
+import Pagination from '@/components/ui/Pagination';
 import { Prisma } from '@prisma/client';
 
+// --- HATA DÜZELTME 1: Sıralama değerlerini API'nin anladığı şekilde güncelledik ---
 const sortOptionsList: SortOptionItem[] = [
-    { value: 'releaseDate-desc', label: 'Yayın Tarihi (Yeni)', group: 'Tarihe Göre' },
-    { value: 'releaseDate-asc', label: 'Yayın Tarihi (Eski)', group: 'Tarihe Göre' },
-    { value: 'title-asc', label: 'Alfabetik (A-Z)', group: 'Alfabetik' },
-    { value: 'title-desc', label: 'Alfabetik (Z-A)', group: 'Alfabetik' },
-    { value: 'likeCount-desc', label: 'Beğeni (Çoktan Aza)', group: 'Popülerlik' },
-    { value: 'favoriteCount-desc', label: 'Favori (Çoktan Aza)', group: 'Popülerlik' },
-    { value: 'averageRating-desc', label: 'Puan (Yüksekten Düşüğe)', group: 'Popülerlik'},
-    { value: 'viewCount-desc', label: 'Görüntülenme (Çoktan Aza)', group: 'Popülerlik'}, // Label güncellendi
-    { value: 'createdAt-desc', label: 'Eklenme Tarihi (Yeni)', group: 'Tarihe Göre' },
+    { value: 'newest', label: 'Eklenme Tarihi (Yeni)', group: 'Tarihe Göre' },
+    { value: 'oldest', label: 'Eklenme Tarihi (Eski)', group: 'Tarihe Göre' },
+    { value: 'titleAsc', label: 'Alfabetik (A-Z)', group: 'Alfabetik' },
+    { value: 'titleDesc', label: 'Alfabetik (Z-A)', group: 'Alfabetik' },
+    { value: 'popular', label: 'En Popüler', group: 'Popülerlik' },
+    { value: 'likes', label: 'En Çok Beğenilen', group: 'Popülerlik' },
+    // Not: API'nizde 'averageRating' ve 'viewCount' için sıralama mantığı yok.
+    // İsterseniz ekleyebilirsiniz, şimdilik bu kadar yeterli.
 ];
 
 const projectCardSelect = Prisma.validator<Prisma.ProjectSelect>()({
@@ -56,68 +56,62 @@ interface ProjectsPageClientProps {
   initialCategories: Category[];
 }
 
-export type SortByType = 'releaseDate' | 'createdAt' | 'title' | 'likeCount' | 'favoriteCount' | 'averageRating' | 'viewCount';
-export type SortOrderType = 'asc' | 'desc';
-
 const ITEMS_PER_PAGE = 20;
 
 export default function ProjectsPageClient({ initialCategories }: ProjectsPageClientProps) {
   const router = useRouter();
-  const pathname = usePathname(); // Bu '/projeler' olacak
-  const searchParams = useSearchParams(); // Hook'u doğrudan kullan
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isFetching, startFetchingTransition] = useTransition();
 
-  // State'ler
-  const [projects, setProjects] = useState<ProjectForCard[]>([]);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalResults, setTotalResults] = useState(0);
-
-  // URL'den initial değerleri okumak için yardımcı fonksiyon
   const getInitialParam = <T,>(paramName: string, defaultValue: T, parser: (val: string) => T = (val) => val as T): T => {
     const value = searchParams.get(paramName);
     return value ? parser(value) : defaultValue;
   };
 
-  // Filtre ve sıralama state'leri
+  const [projects, setProjects] = useState<ProjectForCard[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  
   const [currentPage, setCurrentPage] = useState(() => getInitialParam('page', 1, Number));
-  const [currentSort, setCurrentSort] = useState(() => getInitialParam('sort', 'releaseDate-desc'));
-  const [selectedCategorySlugs, setSelectedCategorySlugs] = useState<string[]>(() => getInitialParam('categories', [] as string[], val => val.split(',')));
-  const [searchTerm, setSearchTerm] = useState(() => getInitialParam('q', ''));
+  const [currentSort, setCurrentSort] = useState(() => getInitialParam('sortBy', 'newest')); // 'sort' yerine 'sortBy' ve varsayılan 'newest'
+  const [selectedCategorySlugs, setSelectedCategorySlugs] = useState<string[]>(() => getInitialParam('categories', [], val => val.split(',')));
+  const [searchTerm, setSearchTerm] = useState(() => getInitialParam('title_contains', ''));
   const [projectType, setProjectType] = useState<'oyun' | 'anime' | ''>(() => getInitialParam('type', '' as 'oyun' | 'anime' | ''));
 
-
-  // Veri çekme fonksiyonu
   const fetchProjects = useCallback(() => {
     startFetchingTransition(async () => {
       const params = new URLSearchParams();
       params.set('page', currentPage.toString());
       params.set('limit', ITEMS_PER_PAGE.toString());
-
+      
+      // --- HATA DÜZELTME 2: Sıralama parametresini API'nin beklediği gibi tek parça gönderiyoruz ---
       if (currentSort) {
-        const [sortBy, sortOrder] = currentSort.split('-');
-        if (sortBy) params.set('sortBy', sortBy);
-        if (sortOrder) params.set('sortOrder', sortOrder);
+        params.set('sortBy', currentSort);
       }
+
+      // --- HATA DÜZELTME 3: Kategori parametresinin adını 'categories' (çoğul) olarak düzelttik ---
       if (selectedCategorySlugs.length > 0) {
-      params.set('categories', selectedCategorySlugs.join(','));
-    }
-      if (searchTerm.trim()) {
-        params.set('q', searchTerm.trim());
+        params.set('categories', selectedCategorySlugs.join(','));
       }
+      
+      if (searchTerm.trim()) {
+        params.set('title_contains', searchTerm.trim());
+      }
+      
       if (projectType) {
         params.set('type', projectType);
       }
 
       try {
-        const apiUrl = `/api/projeler?${params.toString()}`;
-        console.log("ProjectsPageClient: API İsteği URL:", apiUrl);
+        const apiUrl = `/api/projects?${params.toString()}`;
+        console.log("ProjectsPageClient: Giden API İsteği:", apiUrl); // Kontrol için log
         const res = await fetch(apiUrl);
         if (!res.ok) {
           const errData = await res.json().catch(() => ({ message: 'Projeler yüklenirken bir hata oluştu.' }));
           throw new Error(errData.message || 'Projeler yüklenemedi.');
         }
         const data: ApiResponse = await res.json();
-        console.log("ProjectsPageClient VERİSİ:", data.projects);
         setProjects(data.projects || []);
         setTotalPages(data.totalPages || 1);
         setTotalResults(data.totalResults || 0);
@@ -129,34 +123,28 @@ export default function ProjectsPageClient({ initialCategories }: ProjectsPageCl
         setTotalResults(0);
       }
     });
-  }, [currentPage, currentSort, selectedCategorySlugs, searchTerm, projectType, startFetchingTransition]);
+  }, [currentPage, currentSort, selectedCategorySlugs, searchTerm, projectType]); // startFetchingTransition'ı bağımlılıktan çıkardık
 
-  // URL'i state değişikliklerine göre güncelleme ve ilk yükleme
   useEffect(() => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(searchParams.toString());
     params.set('page', currentPage.toString());
-    params.set('sort', currentSort);
+    params.set('sortBy', currentSort); // URL'i de 'sortBy' olarak güncelleyelim
 
     if (selectedCategorySlugs.length > 0) params.set('categories', selectedCategorySlugs.join(','));
     else params.delete('categories');
-
-    if (searchTerm.trim()) params.set('q', searchTerm.trim());
-    else params.delete('q');
+    
+    if (searchTerm.trim()) params.set('title_contains', searchTerm.trim());
+    else params.delete('title_contains');
 
     if (projectType) params.set('type', projectType);
     else params.delete('type');
-
-    // Tarayıcı geçmişini çok fazla kirletmemek için replace kullanıyoruz
-    // ve sadece parametreler gerçekten değiştiyse push yapıyoruz.
-    const currentQueryString = searchParams.toString();
-    const newQueryString = params.toString();
-
-    if (currentQueryString !== newQueryString) {
-        router.replace(`${pathname}?${newQueryString}`, { scroll: false });
+    
+    // URL'i sadece gerçekten değiştiyse güncelle, gereksiz render'ları önle
+    if (params.toString() !== new URLSearchParams(searchParams.toString()).toString()) {
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     }
-    // İlk yüklemede ve bağımlılıklar değiştiğinde veri çek
+    
     fetchProjects();
-
   }, [currentPage, currentSort, selectedCategorySlugs, searchTerm, projectType, pathname, router, fetchProjects, searchParams]);
 
 
@@ -171,15 +159,10 @@ export default function ProjectsPageClient({ initialCategories }: ProjectsPageCl
     setCurrentPage(1);
   };
   
-  // FilterSidebar'dan gelen kategori ID'leri yerine slug'ları kullanacağız
-  // API'miz kategori slug'larına göre filtreleme yapacak şekilde güncellenmeli
-  // veya FilterSidebar'dan ID'ler geliyorsa, API'miz ID'leri kabul etmeli.
-  // Şimdilik FilterSidebar'dan slug'ların geldiğini varsayalım.
   const handleCategoryChange = (categorySlugs: string[]) => {
-  console.log("ProjectsPageClient: Seçilen Kategori Slug'ları (state öncesi):", categorySlugs); // KONSOL LOG 2
-  setSelectedCategorySlugs(categorySlugs);
-  setCurrentPage(1);
-};
+    setSelectedCategorySlugs(categorySlugs);
+    setCurrentPage(1);
+  };
 
   const handleSearchChange = (newSearchTerm: string) => {
     setSearchTerm(newSearchTerm);
@@ -193,18 +176,17 @@ export default function ProjectsPageClient({ initialCategories }: ProjectsPageCl
 
   return (
     <div className="flex flex-col lg:flex-row gap-x-8 gap-y-6">
-      <div className="w-full lg:w-72 xl:w-80 flex-shrink-0 lg:sticky lg:top-24 self-start"> {/* Sticky sidebar */}
+      <div className="w-full lg:w-72 xl:w-80 flex-shrink-0 lg:sticky lg:top-24 self-start">
         <FilterSidebar
-          categories={initialCategories} // Category[] tipinde
-          selectedCategorySlugs={selectedCategorySlugs} // string[] tipinde sluglar
-          onCategoryChange={handleCategoryChange} // (slugs: string[]) => void
-          currentSearchTerm={searchTerm} // İsmi değiştirdim
-          onSearchTermChange={handleSearchChange} // İsmi değiştirdim
-          currentProjectType={projectType} // İsmi değiştirdim
-          onProjectTypeChange={handleProjectTypeChange} // İsmi değiştirdim
+          categories={initialCategories}
+          selectedCategorySlugs={selectedCategorySlugs}
+          onCategoryChange={handleCategoryChange}
+          currentSearchTerm={searchTerm}
+          onSearchTermChange={handleSearchChange}
+          currentProjectType={projectType}
+          onProjectTypeChange={handleProjectTypeChange}
         />
       </div>
-
       <div className="flex-grow min-w-0">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
           <p className="text-sm text-prestij-text-muted">
@@ -213,7 +195,7 @@ export default function ProjectsPageClient({ initialCategories }: ProjectsPageCl
           <SortDropdown
             value={currentSort}
             onChange={handleSortChangeCallback}
-            options={sortOptionsList} // Tanımladığımız listeyi prop olarak geçiyoruz
+            options={sortOptionsList}
           />
         </div>
 

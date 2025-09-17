@@ -1,58 +1,76 @@
-// src/middleware.ts (MODERATOR ROLÜ EKLENMİŞ HALİ)
+// src/middleware.ts (CORS DESTEĞİ EKLENMİŞ GÜNCEL HALİ)
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { UserRole } from '@prisma/client'; // Prisma'dan UserRole enum'unu import ediyoruz
+import { UserRole } from '@prisma/client';
 
+// Geliştirme ortamında masaüstü uygulamasının adresi
+const allowedOrigin = 'http://localhost:5173';
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
+  // --- BÖLÜM 1: API İstekleri İçin CORS Yönetimi ---
+  // Gelen istek bir API isteğiyse, CORS başlıklarını ekle.
+  if (pathname.startsWith('/api/')) {
+    
+    // Tarayıcıdan gelen 'OPTIONS' (preflight) isteğini handle et.
+    // Bu, tarayıcının asıl POST isteğini göndermeden önce izin sorma yöntemidir.
+    if (req.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': allowedOrigin,
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
+    }
+
+    // 'OPTIONS' dışındaki (GET, POST vb.) API isteklerinin devam etmesine izin ver
+    // ve cevap başlıklarına CORS kurallarını ekle.
+    const response = NextResponse.next();
+    response.headers.set('Access-Control-Allow-Origin', allowedOrigin);
+    return response;
+  }
+
+
+  // --- BÖLÜM 2: Sayfa Gezintileri İçin Güvenlik ve Yönlendirme ---
+  // Bu bölüm, API dışındaki tüm sayfa istekleri için çalışır ve eski mantığınızı korur.
+  
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  
   const isAdminOrModeratorPage = pathname.startsWith('/admin');
   const isAuthPage = pathname.startsWith('/giris') || pathname.startsWith('/kayit');
 
-  // --- 1. Kural: Yönetim Paneli Sayfaları ---
-  // Eğer admin veya moderatör paneline gitmeye çalışıyorsa:
+  // --- Kural 2.1: Yönetim Paneli Sayfaları ---
   if (isAdminOrModeratorPage) {
-    // Gerekli rolleri bir diziye alıyoruz.
     const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.MODERATOR];
-
-    // Giriş yapmamışsa VEYA giriş yapmış ama rolü izin verilen rollerden biri değilse -> Giriş sayfasına yönlendir.
     if (!token || !allowedRoles.includes(token.role as UserRole)) {
       return NextResponse.redirect(new URL('/giris', req.url));
     }
-    
-    // Eğer rolü uygunsa, geçişe izin ver.
     return NextResponse.next();
   }
 
-  // --- 2. Kural: Giriş Yapmış Kullanıcılar ---
-  // Eğer kullanıcı giriş yapmışsa (token varsa):
+  // --- Kural 2.2: Giriş Yapmış Kullanıcılar ---
   if (token) {
-    // a) Ban durumunu kontrol et
     const isBanned = token.isBanned ?? false;
     const banExpires = token.banExpiresAt ? new Date(token.banExpiresAt as string) : null;
     const isBanActive = isBanned && (!banExpires || banExpires > new Date());
     
-    // Eğer banlıysa ve ban sayfasının kendisi dışında bir yere gitmeye çalışıyorsa -> Ban sayfasına yönlendir.
     if (isBanActive && pathname !== '/banlandiniz') {
       return NextResponse.redirect(new URL('/banlandiniz', req.url));
     }
     
-    // b) Zaten giriş yapmışken giriş/kayıt sayfalarına gitmesini engelle
     if (isAuthPage) {
       return NextResponse.redirect(new URL('/', req.url));
     }
 
-    // Banlı değilse ve auth sayfasına gitmiyorsa, geçişe izin ver.
     return NextResponse.next();
   }
 
-  // --- 3. Kural: Giriş Yapmamış Kullanıcılar ---
-  // Eğer bu noktaya geldiysek, kullanıcı giriş yapmamıştır.
-  // Not: publicRoutes'u daha dinamik hale getirebiliriz ama şimdilik bu yeterli.
+  // --- Kural 2.3: Giriş Yapmamış Kullanıcılar ---
   const publicRoutes = ['/', '/giris', '/kayit', '/projeler', '/hakkimizda', '/kadromuz']; 
   const isPublic = publicRoutes.some(route => pathname.startsWith(route) || pathname === route);
 
@@ -60,14 +78,27 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Eğer sayfa public değilse (örn: /profil, /mesajlar), giriş sayfasına yönlendir.
   const url = new URL('/giris', req.url);
   url.searchParams.set('callbackUrl', pathname);
   return NextResponse.redirect(url);
 }
 
+
+// --- GÜNCELLENMİŞ CONFIG ---
+// Matcher'ı hem API yollarını hem de sayfa yollarını içerecek şekilde güncelliyoruz.
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|images|sounds).*)',
+    /*
+     * Aşağıdaki yollarla eşleş:
+     * - api (API rotaları)
+     * - trpc (tRPC rotaları)
+     * - hariç olanlar:
+     *   - _next/static (statik dosyalar)
+     *   - _next/image (resim optimizasyon dosyaları)
+     *   - favicon.ico (favicon dosyası)
+     *   - images (kendi resim klasörünüz)
+     *   - sounds (kendi ses klasörünüz)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|images|sounds).*)',
   ],
 };

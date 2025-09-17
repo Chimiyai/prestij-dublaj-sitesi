@@ -15,6 +15,8 @@
                 page.tsx
             kayit/
                 page.tsx
+            sifremi-unuttum/
+                page.tsx
         admin/
             page.tsx
             basvurular/
@@ -24,6 +26,7 @@
                 page.tsx
                 _components/
                     StatCard.tsx
+                    StatisticsClientPage.tsx
                     StatisticsDashboard.tsx
             kategoriler/
                 page.tsx
@@ -34,6 +37,8 @@
                     SubmissionsList.tsx
             kullanicilar/
                 page.tsx
+                types.ts
+                UsersClientPage.tsx
             oneriler/
                 page.tsx
                 _components/
@@ -59,6 +64,8 @@
                         page.tsx
                 yeni/
                     page.tsx
+                _components/
+                    ArtistsTable.tsx
         api/
             admin/
                 applications/
@@ -91,6 +98,8 @@
                     route.ts
                     cover-image/
                         route.ts
+                    upload-mod/
+                        route.ts
                     [slug]/
                         route.ts
                         characters/
@@ -122,6 +131,11 @@
                         route.ts
                         ban/
                             route.ts
+                        gift/
+                            route.ts
+                        library/
+                            [projectId]/
+                                route.ts
                         update-username/
                             route.ts
             applications/
@@ -133,6 +147,12 @@
                     like/
                         route.ts
             auth/
+                desktop-login/
+                    route.ts
+                generate-recovery/
+                    route.ts
+                reset-password-with-code/
+                    route.ts
                 [...nextauth]/
                     route.ts
             categories/
@@ -146,6 +166,8 @@
                 add-to-library/
                     route.ts
             image-upload/
+                route.ts
+            library/
                 route.ts
             messages/
                 route.ts
@@ -185,7 +207,8 @@
                     route.ts
                 top-favorites/
                     route.ts
-                [projectId]/
+                [param]/
+                    route.ts
                     comments/
                         route.ts
                         [commentId]/
@@ -196,8 +219,6 @@
                         route.ts
                     like/
                         route.ts
-            projeler/
-                route.ts
             register/
                 route.ts
             sounds/
@@ -288,6 +309,7 @@
         ProjectCoverImageClient.tsx
         ProjectDetailContent.tsx
         ProjectDetailCover.tsx
+        ProtocolButton.tsx
         Providers.tsx
         admin/
             AddArtistForm.tsx
@@ -306,7 +328,9 @@
             DeleteUserButton.tsx
             EditArtistForm.tsx
             EditProjectForm.tsx
+            GiftGameModal.tsx
             ImageUploader.tsx
+            ModUploader.tsx
             ProjectAssignmentsManager.tsx
             ProjectCategoriesSelect.tsx
             ProjectCharactersManager.tsx
@@ -321,6 +345,7 @@
             ArtistInteractionButtons.tsx
         auth/
             GirisPageClient.tsx
+            RecoveryCodeModal.tsx
             SignOutButton.tsx
         home/
             CountdownSection.tsx
@@ -357,6 +382,7 @@
             LibraryContent.tsx
             OverviewContent.tsx
             ProfileImageUploader.tsx
+            RecoveryCodeManager.tsx
             UpdateBioForm.tsx
             UpdateEmailForm.tsx
             UpdatePasswordForm.tsx
@@ -399,6 +425,7 @@
         showcaseData.ts
     lib/
         authOptions.ts
+        authUtils.ts
         cloudinary.ts
         prisma.ts
         utils.ts

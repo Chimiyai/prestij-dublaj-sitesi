@@ -37,7 +37,7 @@ async function fetchTypedProjectsFromApi(projectType: 'oyun' | 'anime'): Promise
       return [];
     }
     const data = await res.json();
-    return data;
+    return data.projects || [];
   } catch (error) {
     console.error(`Fetch sırasında genel hata (${projectType}):`, error);
     return [];

@@ -73,8 +73,8 @@ const PopularContentSection = () => {
         const errorData = await res.json().catch(() => ({ message: "API'den hata mesajı alınamadı." }));
         throw new Error(`API Hatası (${res.status}): ${errorData.message || res.statusText}`);
       }
-      const data: ApiProjectPopular[] = await res.json();
-      setDisplayedItems(data);
+      const data = await res.json();
+      setDisplayedItems(data.projects || []);
     } catch (err: any) {
       console.error("Popular content fetch error:", err);
       setError(err.message || "İçerikler yüklenirken bir hata oluştu.");
