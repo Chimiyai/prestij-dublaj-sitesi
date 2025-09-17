@@ -7,7 +7,7 @@ import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/authUtils';
 import { UserRole } from '@prisma/client';
 
-const MOD_STORAGE_PATH = process.env.NODE_ENV === 'production'
+const MOD_STORAGE_PATH = '/var/www/prestijstudio.com/public/mods';
   ? path.resolve('/var/www/prestij/mods') // VDS için
   : path.resolve(process.cwd(), 'public/mods');
 
