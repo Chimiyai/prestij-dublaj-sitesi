@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     
     console.log(`[DEBUG] Dosya başarıyla yüklendi.`);
 
-    const downloadUrl = `https://cdn.prestij-dublaj.com/mods/${newFileName}`;
+    const downloadUrl = `https://prestijstudio.com/mods/${newFileName}`;
 
     await prisma.project.update({
       where: { id: parseInt(projectId, 10) },
