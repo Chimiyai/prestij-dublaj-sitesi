@@ -1,11 +1,10 @@
 // src/components/home/HeroSection.tsx
 "use client";
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import TopProjectCard from './TopProjectCard'; // TopProjectCardProps buradan geliyor
+import TopProjectCard from './TopProjectCard';
 import MainShowcase from './MainShowcase';
 import SideShowcaseItem from './SideShowcaseItem';
-import { formatDate } from '@/lib/utils'; // formatDate fonksiyonunu import et
-// Placeholder Component'lerini import et
+// Placeholder'ları import etmeye devam ediyoruz
 import TopProjectCardPlaceholder from './TopProjectCardPlaceholder';
 import MainShowcasePlaceholder from './MainShowcasePlaceholder';
 import SideShowcaseItemPlaceholder from './SideShowcaseItemPlaceholder';
@@ -19,28 +18,42 @@ interface ApiBaseProject {
   type: string;
   bannerImagePublicId?: string | null;
   coverImagePublicId?: string | null;
-  releaseDate?: string | Date | null; // Bu alan zaten vardı
+  releaseDate?: string | Date | null;
   description?: string | null;
 }
 
-async function fetchTopFavoriteProjects(): Promise<ApiBaseProject[]> {
+// --- DEĞİŞİKLİK 1: Fonksiyonu doğru API'yi çağıracak şekilde güncelledik ---
+async function fetchTopProjectsForRow(): Promise<ApiBaseProject[]> {
   try {
-    const res = await fetch('/api/projects/top-favorites');
-    if (!res.ok) { console.error("Top favoriler yüklenemedi"); return []; }
+    // En son eklenen 3 projeyi çekiyoruz
+    const res = await fetch('/api/projects?sortBy=newest&limit=3');
+    if (!res.ok) { 
+      console.error("Üst sıra projeleri yüklenemedi"); 
+      return []; 
+    }
     const data = await res.json();
     return data.projects || [];
-
-  } catch (e) { console.error("API Error fetchTopFavoriteProjects:", e); return []; }
+  } catch (e) { 
+    console.error("API Error fetchTopProjectsForRow:", e); 
+    return []; 
+  }
 }
 
+// --- DEĞİŞİKLİK 2: Bu fonksiyonu da doğru parametreleri kullanacak şekilde güncelledik ---
 async function fetchLatestProjectsForSideList(): Promise<ApiBaseProject[]> {
   try {
-    const res = await fetch('/api/projects?limit=4&orderBy=createdAt');
-    if (!res.ok) { console.error("Yan liste projeleri yüklenemedi"); return []; }
+    // En son eklenen 4 projeyi çekiyoruz
+    const res = await fetch('/api/projects?sortBy=newest&limit=4');
+    if (!res.ok) { 
+      console.error("Yan liste projeleri yüklenemedi"); 
+      return []; 
+    }
     const data = await res.json();
     return data.projects || [];
-    
-  } catch (e) { console.error("API Error fetchLatestProjectsForSideList:", e); return []; }
+  } catch (e) { 
+    console.error("API Error fetchLatestProjectsForSideList:", e); 
+    return []; 
+  }
 }
 
 const HeroSection = () => {
@@ -52,14 +65,15 @@ const HeroSection = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      setIsLoading(true); // Yüklemeyi başta başlat
+      // --- DEĞİŞİKLİK 3: Güncellenmiş fonksiyonu çağırıyoruz ---
       const [topData, sideData] = await Promise.all([
-        fetchTopFavoriteProjects(),
+        fetchTopProjectsForRow(),
         fetchLatestProjectsForSideList()
       ]);
       setTopProjects(topData);
       setSideListApiData(sideData);
-      // console.log("HeroSection: sideListApiData loaded:", sideData);
-      setIsLoading(false);
+      setIsLoading(false); // Veriler gelince yüklemeyi bitir
     };
     loadData();
   }, []);
@@ -72,55 +86,38 @@ const HeroSection = () => {
     image: p.bannerImagePublicId,
     banner: p.bannerImagePublicId,
     cover: p.coverImagePublicId,
-    type: p.type.toLowerCase() === 'oyun' ? 'Oyun' : p.type.toLowerCase() === 'anime' ? 'Anime' : p.type,
-    detailsUrl: `/${p.type.toLowerCase() === 'oyun' ? 'oyunlar' : 'animeler'}/${p.slug}`,
+    type: p.type.toLowerCase() === 'oyun' ? 'Oyun' : 'Anime',
+    detailsUrl: `/projeler/${p.slug}`, // Linki /projeler/ olarak düzelttik
     cardTitle: p.title,
     slug: p.slug,
-    releaseDate: p.releaseDate, // << Tarih bilgisini buraya ekliyoruz/teyit ediyoruz
+    releaseDate: p.releaseDate,
   }));
 
-  // sideListData.forEach((item, idx) => console.log(`HeroSection: sideListData[${idx}]:`, {id: item.id, title: item.title, releaseDate: item.releaseDate }));
-
   const currentCardData = sideListData.length > 0 ? sideListData[currentIndex] : null;
-  // console.log("HeroSection: currentCardData updated.", { id: currentCardData?.id, currentIndex: currentIndex, title: currentCardData?.title, releaseDate: currentCardData?.releaseDate });
-
 
   const changeShowcaseItem = useCallback((newIndex: number) => {
-    // console.log("HeroSection: changeShowcaseItem called with newIndex:", newIndex, "Current currentIndex:", currentIndex);
-    if (newIndex < 0 || newIndex >= sideListData.length) return;
-    if (newIndex === currentIndex && sideListData.length > 1) {
-        if (autoSlideTimerRef.current) clearTimeout(autoSlideTimerRef.current);
-        autoSlideTimerRef.current = setTimeout(() => {
-            const nextAutoIndex = (newIndex + 1) % sideListData.length;
-            changeShowcaseItem(nextAutoIndex);
-        }, AUTO_SLIDE_DELAY);
-        return;
-    }
+    if (newIndex < 0 || newIndex >= sideListData.length || newIndex === currentIndex) return;
     setCurrentIndex(newIndex);
   }, [currentIndex, sideListData.length]);
 
   useEffect(() => {
-    if (sideListData.length <= 1) {
-        if (autoSlideTimerRef.current) clearTimeout(autoSlideTimerRef.current);
-        return;
-    }
-    if (autoSlideTimerRef.current) clearTimeout(autoSlideTimerRef.current);
+    if (sideListData.length <= 1) return;
 
+    if (autoSlideTimerRef.current) clearTimeout(autoSlideTimerRef.current);
     autoSlideTimerRef.current = setTimeout(() => {
       const nextIndex = (currentIndex + 1) % sideListData.length;
-      changeShowcaseItem(nextIndex);
+      setCurrentIndex(nextIndex); // Doğrudan state'i güncelle
     }, AUTO_SLIDE_DELAY);
 
     return () => {
       if (autoSlideTimerRef.current) clearTimeout(autoSlideTimerRef.current);
     };
-  }, [currentIndex, changeShowcaseItem, sideListData.length]);
-
+  }, [currentIndex, sideListData.length]);
 
   const handleSideItemClick = (index: number) => {
-    // console.log("HeroSection: handleSideItemClick called with index:", index);
     changeShowcaseItem(index);
   };
+
 
   if (isLoading) {
     return (
@@ -152,23 +149,21 @@ const HeroSection = () => {
   return (
     <section className="hero-section bg-prestij-bg-dark-3 py-8 overflow-hidden">
       <div className="container mx-auto px-4">
+      {/* Bu bölüm artık doğru veriyle dolacağı için görünecektir */}
       {topProjects.length > 0 && (
           <div className="top-projects-row flex flex-col md:flex-row justify-center md:justify-between gap-5 mb-8">
-          {topProjects.map((project) => {
-            const projectType = project.type.toLowerCase() === 'oyun' ? 'Oyun' : project.type.toLowerCase() === 'anime' ? 'Anime' : project.type;
-            return (
+            {topProjects.map((project) => (
               <TopProjectCard
                   key={project.id.toString()}
-                  type={projectType as 'Oyun' | 'Anime'}
+                  type={project.type.toLowerCase() === 'oyun' ? 'Oyun' : 'Anime'}
                   title={project.title}
                   description={project.description}
-                  date={project.releaseDate} // TopProjectCard'a da Date objesi veya string olarak geçebiliriz
+                  date={project.releaseDate}
                   bannerUrl={project.bannerImagePublicId}
                   coverUrl={project.coverImagePublicId}
                   slug={project.slug}
               />
-            );
-          })}
+            ))}
           </div>
       )}
       {!isLoading && topProjects.length === 0 && sideListData.length === 0 && (

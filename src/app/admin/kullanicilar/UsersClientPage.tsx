@@ -1,3 +1,4 @@
+// src/app/admin/kullanicilar/UsersClientPage.tsx
 'use client';
 
 import { useState } from 'react';
@@ -8,16 +9,18 @@ import { cn } from '@/lib/utils';
 import { UserRole } from '@prisma/client';
 import { Gift } from 'lucide-react';
 
-// Tipleri page.tsx'den import ediyoruz
+// Tipleri import ediyoruz
 import { User, Game } from './types';
 
-// Daha önce oluşturduğumuz bileşenleri import ediyoruz
+// Bileşenleri import ediyoruz
 import GiftGameModal from '@/components/admin/GiftGameModal';
 import UpdateUserRole from '@/components/admin/UpdateUserRole';
 import DeleteUserButton from '@/components/admin/DeleteUserButton';
 import BanUserButton from '@/components/admin/BanUserButton';
+// --- 1. YENİ BİLEŞENİ IMPORT ET ---
+import ResetPasswordButton from '@/components/admin/ResetPasswordModal';
 
-// Rol etiketleri için yardımcı bileşen (page.tsx'den buraya taşıdık)
+// Rol etiketleri için yardımcı bileşen
 const RoleBadge = ({ role }: { role: UserRole }) => {
   const roleStyles = {
     [UserRole.ADMIN]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
@@ -48,15 +51,12 @@ export default function UsersClientPage({ users, allGames, currentAdminId }: Use
   };
 
   const handleUpdate = () => {
-    // Veri güncellendiğinde, Next.js'in sunucu tarafı verisini yeniden çekmesini sağla
     router.refresh(); 
-    // Modal'ı kapat
     setIsModalOpen(false);
   };
 
   return (
     <>
-      {/* Modal, DOM'un herhangi bir yerinde olabilir, state ile yönetilir */}
       <GiftGameModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -109,7 +109,6 @@ export default function UsersClientPage({ users, allGames, currentAdminId }: Use
                           username={user.username}
                           isCurrentUserAdmin={currentAdminId === user.id.toString()}
                         />
-                        {/* --- YENİ BUTON --- */}
                         <button 
                             onClick={() => openModal(user)} 
                             title="Hediye Gönder / Kütüphaneyi Yönet" 
@@ -118,16 +117,22 @@ export default function UsersClientPage({ users, allGames, currentAdminId }: Use
                         >
                             <Gift className="w-5 h-5" />
                         </button>
-                        {/* --- BUTONLARIN YENİ SIRALAMASI --- */}
-                        <DeleteUserButton
+                        
+                        {/* --- 2. YENİ BUTONU DİĞERLERİNİN YANINA EKLE --- */}
+                        <ResetPasswordButton
                           userId={user.id}
                           username={user.username}
-                          isCurrentUserAdmin={currentAdminId === user.id.toString()}
                         />
+
                         <BanUserButton
                           userId={user.id}
                           username={user.username}
                           isBanned={user.isBanned}
+                          isCurrentUserAdmin={currentAdminId === user.id.toString()}
+                        />
+                        <DeleteUserButton
+                          userId={user.id}
+                          username={user.username}
                           isCurrentUserAdmin={currentAdminId === user.id.toString()}
                         />
                       </div>

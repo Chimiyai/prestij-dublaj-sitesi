@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/authOptions';
 import { UserRole } from '@prisma/client';
 import AdminPageLayout from '@/components/admin/AdminPageLayout';
 import { ShieldExclamationIcon } from '@heroicons/react/24/outline';
+import ResetPasswordButton from '@/components/admin/ResetPasswordModal';
 
 // --- DEĞİŞİKLİK 1: Yeni dosyadan import ediyoruz ---
 import { User, Game } from './types'; 
