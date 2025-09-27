@@ -13,7 +13,7 @@ const resetPasswordSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } } // Build hatası almamak için Promise'siz versiyonu deneyelim
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     // 1. İstek yapan kullanıcının Admin olup olmadığını kontrol et
@@ -22,7 +22,8 @@ export async function POST(
       return NextResponse.json({ message: 'Bu işlem için yetkiniz yok.' }, { status: 403 });
     }
 
-    const targetUserId = parseInt(params.userId, 10);
+    const resolvedParams = await params;
+    const targetUserId = parseInt(resolvedParams.userId, 10);
     if (isNaN(targetUserId)) {
       return NextResponse.json({ message: 'Geçersiz kullanıcı ID formatı.' }, { status: 400 });
     }
