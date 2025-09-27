@@ -8,8 +8,6 @@ import { getAuthenticatedUser } from '@/lib/authUtils';
 import { UserRole } from '@prisma/client';
 
 const MOD_STORAGE_PATH = '/var/www/prestijstudio.com/public/mods';
-  ? path.resolve('/var/www/prestij/mods') // VDS için
-  : path.resolve(process.cwd(), 'public/mods');
 
 export async function POST(request: NextRequest) {
   const user = await getAuthenticatedUser(request);

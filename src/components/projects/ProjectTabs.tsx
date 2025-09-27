@@ -39,8 +39,12 @@ function ContributorsSection({ assignments }: { assignments: ProjectDataForDetai
     });
 
     const roleOrder: RoleInProject[] = [
-        RoleInProject.DIRECTOR, RoleInProject.SCRIPT_WRITER, RoleInProject.TRANSLATOR,
-        RoleInProject.VOICE_ACTOR, RoleInProject.MIX_MASTER, RoleInProject.MODDER,
+        RoleInProject.DIRECTOR,
+        RoleInProject.MODDER,
+        RoleInProject.SCRIPT_WRITER,
+        RoleInProject.MIX_MASTER,
+        RoleInProject.TRANSLATOR,
+        RoleInProject.VOICE_ACTOR,
     ];
 
     // Map'i roleOrder'a göre sıralı bir array'e dönüştür
