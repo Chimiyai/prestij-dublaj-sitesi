@@ -1,4 +1,4 @@
-// src/components/ProjectDetailCover.tsx (İYİLEŞTİRİLMİŞ VE DÜZELTİLMİŞ VERSİYON)
+// src/components/ProjectDetailCover.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -78,7 +78,7 @@ export default function ProjectDetailCover({ project, playTrigger, onVideoStateC
             "absolute inset-0 object-cover transition-opacity duration-300 ease-in-out rounded-lg z-10",
             playerState === 'playing' && "opacity-30" // Video oynarken arkada hafifçe görünsün
           )}
-          priority={playerState !== 'playing'}
+          unoptimized={true}
         />
       )}
 

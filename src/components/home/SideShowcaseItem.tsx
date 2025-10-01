@@ -54,7 +54,7 @@ const SideShowcaseItem: React.FC<SideShowcaseItemProps> = ({
           width={65}
           height={65}
           className="side-item-cover w-[65px] h-[65px] object-cover rounded-md mr-[10px] flex-shrink-0 border border-white/10 z-[2] transition-transform duration-300 ease-out group-hover:scale-110"
-          unoptimized={typeof finalCoverUrl === 'string' && finalCoverUrl.startsWith('/images/')}
+          unoptimized={true}
         />
         <div className="side-item-main-content flex-grow relative z-[2] flex flex-col justify-center overflow-hidden text-left">
           <span className={`${typeBgClass} text-white inline-block self-start text-[0.65em] font-semibold rounded px-[6px] py-[2px] leading-none mb-0.5`}>
@@ -72,7 +72,7 @@ const SideShowcaseItem: React.FC<SideShowcaseItemProps> = ({
             alt=""
             fill
             className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.05]"
-            unoptimized={typeof finalBannerUrl === 'string' && finalBannerUrl.startsWith('/images/')}
+            unoptimized={true}
           />
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to left, rgba(16,12,28,0) 5%, rgba(16,12,28,0.4) 35%, #100C1C 85%)' }}></div>
         </div>
