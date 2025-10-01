@@ -119,7 +119,7 @@ const MainShowcase: React.FC<MainShowcaseProps> = (props) => {
   // Cloudinary ID'lerini veya placeholder yollarını URL'ye çevir
   const finalImageSrc = getCloudinaryImageUrlOptimized(
     displayData.imageUrl, // displayData'dan ID veya yolu al
-    { width: 1200, height: 675, crop: 'fill', quality: 'auto', format: 'auto' },
+    { width: 1200, height: 675, crop: 'limit', quality: 'auto', format: 'auto' },
     'banner'
   );
   const finalCoverSrc = getCloudinaryImageUrlOptimized(

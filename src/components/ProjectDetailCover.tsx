@@ -49,7 +49,7 @@ export default function ProjectDetailCover({ project, playTrigger, onVideoStateC
   const bannerDisplayUrl = bannerImagePublicId
     ? getCloudinaryImageUrlOptimized(
         bannerImagePublicId,
-        { width: 1920, height: 1080, crop: 'fill', gravity: 'auto', quality: 'auto', format: 'auto' },
+        { width: 1920, height: 1080, crop: 'limit', gravity: 'auto', quality: 'auto', format: 'auto' },
         'banner'
       )
     : null; // Eğer banner yoksa null yap
@@ -78,7 +78,7 @@ export default function ProjectDetailCover({ project, playTrigger, onVideoStateC
             "absolute inset-0 object-cover transition-opacity duration-300 ease-in-out rounded-lg z-10",
             playerState === 'playing' && "opacity-30" // Video oynarken arkada hafifçe görünsün
           )}
-          unoptimized={true}
+        
         />
       )}
 
