@@ -20,6 +20,7 @@ const roleStringToEnumMap: { [key: string]: RoleInProject | undefined } = {
 const applicationSchema = z.object({
   firstName: z.string().min(2, "İsim en az 2 karakter olmalıdır."),
   lastName: z.string().min(2, "Soyisim en az 2 karakter olmalıdır."),
+  phoneNumber: z.string().optional().nullable(),
   roles: z.array(z.string()).min(1, "En az bir unvan/yetenek seçilmelidir."),
   bio: z.string().max(1000).optional().default(''),
   socialLinks: z.array(z.object({ platform: z.string(), url: z.string().url() })).optional().default([]),

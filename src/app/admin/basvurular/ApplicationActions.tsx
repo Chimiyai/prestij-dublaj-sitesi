@@ -62,6 +62,7 @@ export default function ApplicationActions({ application }: ApplicationActionsPr
                 </Dialog.Title>
                 <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
                    <p><strong className="font-semibold text-gray-500 w-32 inline-block">Kullanıcı Adı:</strong> {application.user.username}</p>
+                   <p><strong className="font-semibold text-gray-500 w-32 inline-block">Telefon Numarası:</strong> {appData.phoneNumber || 'Belirtilmemiş'}</p>
                    <p><strong className="font-semibold text-gray-500 w-32 inline-block">Unvanlar:</strong> {appData.roles.join(', ')}</p>
                    <div><strong className="font-semibold text-gray-500 block mb-1">Bio:</strong><p className="text-sm p-3 bg-gray-100 dark:bg-gray-800 rounded-md whitespace-pre-wrap">{appData.bio || 'Belirtilmemiş'}</p></div>
                    <p><strong className="font-semibold text-gray-500 w-32 inline-block">Çalışma Örneği:</strong> <a href={appData.workSampleUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline break-all">{appData.workSampleUrl}</a></p>

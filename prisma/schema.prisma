@@ -276,6 +276,7 @@ model Project {
   isFeaturedForCountdown Boolean  @default(false) // Anasayfada gösterilip gösterilmeyeceği
   progressPercentage   Int?                        // İlerleme çubuğu yüzdesi (opsiyonel)
   downloadLogs DownloadLog[] // Bu projeye ait indirme loglarının listesi
+  textSnippets TextSnippet[]
 
   @@map("projects")
 }
@@ -687,4 +688,22 @@ model VoiceSubmission {
   @@index([dialogueId])
   @@index([userId])
   @@map("voice_submissions")
+}
+model TextSnippet {
+  id        Int      @id @default(autoincrement())
+  publicId  String   @unique @default(cuid())
+  content   String   @db.Text
+  
+  // --- YENİ ALANLAR ---
+  title     String   @default("İsimsiz Metin") // Sol menüde göstermek için başlık
+  projectId Int?     // Opsiyonel: Hangi projeye ait olduğu
+  
+  // Not: Bu ilişki Project tablosuna bir alan eklemez, çünkü karşı tarafı yok.
+  // Bu, sadece Prisma'ya bu ID'nin Project tablosuna bir referans olduğunu söyler.
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("text_snippets")
 }

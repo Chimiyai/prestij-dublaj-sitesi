@@ -106,6 +106,7 @@ export function ApplicationForm({ formData, setFormData }: ApplicationFormProps)
     const payload = {
         firstName: formData.firstName,
         lastName: formData.lastName,
+        phoneNumber: formData.phoneNumber,
         roles: formData.roles,
         bio: formData.bio,
         socialLinks: formData.socialLinks,
@@ -144,6 +145,19 @@ export function ApplicationForm({ formData, setFormData }: ApplicationFormProps)
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div><label htmlFor="firstName" className="form-label">İsim *</label><input type="text" name="firstName" id="firstName" value={formData.firstName} onChange={handleInputChange} className="form-input" required /></div>
         <div><label htmlFor="lastName" className="form-label">Soyisim *</label><input type="text" name="lastName" id="lastName" value={formData.lastName} onChange={handleInputChange} className="form-input" required /></div>
+      </div>
+      <div>
+        <label htmlFor="phoneNumber" className="form-label">Telefon Numarası (Opsiyonel)</label>
+        <input 
+          type="tel" 
+          name="phoneNumber" 
+          id="phoneNumber" 
+          value={formData.phoneNumber} 
+          onChange={handleInputChange} 
+          className="form-input" 
+          placeholder="Örn: 555 123 4567"
+        />
+        <p className="text-xs text-gray-500 mt-1">Numaranız Başvurunuzun Kabul Edildiğinde Whatsapp üzerinden Grubumuza Eklenilecektir.</p>
       </div>
       <div>
         <label htmlFor="roles" className="form-label">Unvanların / Yeteneklerin *</label>

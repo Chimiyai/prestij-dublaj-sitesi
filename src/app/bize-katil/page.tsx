@@ -1,4 +1,4 @@
-// src/app/bize-katil/page.tsx (YENİ TASARIM İÇİN GÜNCELLENDİ)
+// src/app/bize-katil/page.tsx
 
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';

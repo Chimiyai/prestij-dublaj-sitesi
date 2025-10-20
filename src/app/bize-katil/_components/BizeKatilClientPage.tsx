@@ -15,6 +15,7 @@ export interface SocialLink {
 export interface ApplicationFormData {
   firstName: string;
   lastName: string;
+  phoneNumber: string;
   roles: string[]; // Artık bir dizi (array)
   bio: string;
   socialLinks: SocialLink[]; // Artık bir obje dizisi
@@ -33,6 +34,7 @@ export function BizeKatilClientPage({ user, previewMember }: BizeKatilClientPage
   const [formData, setFormData] = useState<ApplicationFormData>({
     firstName: user.name.split(' ')[0] || '',
     lastName: user.name.split(' ').slice(1).join(' ') || '',
+    phoneNumber: '',
     roles: [], // Boş bir dizi olarak başlıyor
     bio: '',
     socialLinks: [], // Boş bir dizi olarak başlıyor
@@ -44,7 +46,7 @@ export function BizeKatilClientPage({ user, previewMember }: BizeKatilClientPage
   return (
     <div className="container mx-auto px-4 py-16 sm:py-24">
       <div className="text-center max-w-3xl mx-auto mb-16">
-        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500">
+        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500">
           Ekibimize Katılın
         </h1>
         <p className="mt-4 text-lg text-gray-400">

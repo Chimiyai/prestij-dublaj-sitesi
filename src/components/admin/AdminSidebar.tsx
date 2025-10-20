@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { UserRole } from '@prisma/client';
-import { LayoutDashboard, Users, Library, Mic2, LayoutGrid, ShieldAlert, Handshake, BarChart3, Lightbulb, HeartPlus } from 'lucide-react';
+import { LayoutDashboard, Users, Library, Mic2, LayoutGrid, ShieldAlert, Handshake, BarChart3, Lightbulb, HeartPlus, TextCursorIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // 1. Veri Yapısını Gruplara Ayırdık
@@ -23,6 +23,7 @@ const sidebarGroups = [
       { href: "/admin/sanatcilar", label: "Sanatçılar", icon: Mic2, allowedRoles: [UserRole.ADMIN, UserRole.MODERATOR] },
       { href: "/admin/kategoriler", label: "Kategoriler", icon: LayoutGrid, allowedRoles: [UserRole.ADMIN] },
       { href: "/admin/katkilar", label: "Katkılar", icon: HeartPlus, allowedRoles: [UserRole.ADMIN, UserRole.MODERATOR] },
+      { href: "/ceviri", label: "Çeviri", icon: TextCursorIcon, allowedRoles: [UserRole.ADMIN, UserRole.MODERATOR] },
     ]
   },
   {

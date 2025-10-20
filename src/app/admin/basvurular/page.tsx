@@ -15,6 +15,7 @@ export type EnrichedApplication = (TeamApplication & {
   user: { username: string; email: string; };
   parsedDetails: {
     firstName: string; lastName: string;
+    phoneNumber: string;
     roles: string[]; bio: string;
     socialLinks: { platform: string; url: string; }[];
     profileImagePublicId: string; workSampleUrl: string;
@@ -29,7 +30,7 @@ async function getApplications(): Promise<EnrichedApplication[]> {
     });
 
     return applications.map(app => {
-      let parsedDetails = { firstName: '', lastName: '', roles: [], bio: '', socialLinks: [], profileImagePublicId: '', workSampleUrl: '' };
+      let parsedDetails = { firstName: '', lastName: '', phoneNumber: '', roles: [], bio: '', socialLinks: [], profileImagePublicId: '', workSampleUrl: '' };
       try {
         if (app.detailsJson) parsedDetails = JSON.parse(app.detailsJson);
       } catch (e) { console.error(`Başvuru ID ${app.id} için JSON parse hatası:`, e); }
