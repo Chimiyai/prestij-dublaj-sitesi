@@ -18,6 +18,10 @@ enum RoleInProject {
 
 enum UserRole {
   USER
+  VOICE_ACTOR
+  TRANSLATOR
+  MODDER
+  MIX_MASTER
   MODERATOR
   ADMIN
 }
@@ -162,6 +166,10 @@ model User {
   votes                CommunitySuggestionVote[]
 
   voiceSubmissions VoiceSubmission[]
+  translatorTasks  ProductionTask[] @relation("TranslatorTasks")
+  voiceActorTasks  ProductionTask[] @relation("VoiceActorTasks")
+  mixMasterTasks   ProductionTask[] @relation("MixMasterTasks")
+  modderTasks      ProductionTask[] @relation("ModderTasks")
 
   @@map("users")
 }
@@ -231,6 +239,47 @@ model SupportRequest {
   @@map("support_requests")
 }
 
+enum TaskStatus {
+  PENDING_VOICE_ACTOR   // Seslendirme Sanatçısı bekleniyor
+  PENDING_MIX_MASTER    // Mix/Master bekleniyor
+  PENDING_MODDER        // Modder bekleniyor
+  COMPLETED             // Tamamlandı
+  REJECTED              // Reddedildi/İptal edildi
+}
+
+model ProductionTask {
+  id              Int      @id @default(autoincrement())
+  characterName   String   // Seslendirilecek karakterin adı
+
+  // Dosya Yolları
+  scriptFileUrl   String   // Çevirmenin yüklediği .txt dosyasının Cloudinary URL'si
+  voiceRecordUrl  String?  // Seslendirme sanatçısının yüklediği RAR'ın URL'si
+  mixedAudioUrl   String?  // Mix/Master'ın yüklediği dosyanın URL'si
+  
+  status          TaskStatus @default(PENDING_VOICE_ACTOR)
+
+  // İlişkiler
+  projectId       Int
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Görevin atandığı kişiler
+  assignedTranslatorId  Int?  // Görevi oluşturan çevirmen
+  assignedTranslator    User?   @relation("TranslatorTasks", fields: [assignedTranslatorId], references: [id], onDelete: SetNull)
+
+  assignedVoiceActorId  Int?  // Görevin atandığı seslendirme sanatçısı
+  assignedVoiceActor    User?   @relation("VoiceActorTasks", fields: [assignedVoiceActorId], references: [id], onDelete: SetNull)
+
+  assignedMixMasterId   Int?  // Görevin atandığı mix/master
+  assignedMixMaster     User?   @relation("MixMasterTasks", fields: [assignedMixMasterId], references: [id], onDelete: SetNull)
+
+  assignedModderId      Int?  // Görevin atandığı modder
+  assignedModder        User?   @relation("ModderTasks", fields: [assignedModderId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("production_tasks")
+}
 
 model Project {
   id                  Int       @id @default(autoincrement())
@@ -277,6 +326,7 @@ model Project {
   progressPercentage   Int?                        // İlerleme çubuğu yüzdesi (opsiyonel)
   downloadLogs DownloadLog[] // Bu projeye ait indirme loglarının listesi
   textSnippets TextSnippet[]
+  productionTasks ProductionTask[]
 
   @@map("projects")
 }

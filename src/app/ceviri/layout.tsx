@@ -11,7 +11,7 @@ export default async function CeviriLayout({
   const session = await getServerSession(authOptions);
 
   // Eğer kullanıcı giriş yapmamışsa VEYA rolü Admin ya da Moderatör DEĞİLSE
-  if (!session || (session.user?.role !== 'ADMIN' && session.user?.role !== 'MODERATOR')) {
+  if (!session || (session.user?.role !== 'ADMIN' && session.user?.role !== 'MODERATOR' && session.user?.role !== 'TRANSLATOR')) {
     // Kullanıcıyı anasayfaya veya giriş sayfasına yönlendir
     redirect('/'); 
   }

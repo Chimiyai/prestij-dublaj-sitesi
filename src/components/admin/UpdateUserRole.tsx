@@ -1,20 +1,32 @@
+// src/components/admin/UpdateUserRole.tsx
 'use client';
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition, useEffect } from 'react';
-import { UserRole } from '@prisma/client'; // <-- YENİ: Prisma'dan UserRole enum'unu import edelim
+import { UserRole } from '@prisma/client';
 
 interface UpdateUserRoleProps {
   userId: number;
-  // --- DEĞİŞİKLİK 1: currentRole tipini UserRole enum'u ile değiştiriyoruz ---
   currentRole: UserRole; 
   username: string;
   isCurrentUserAdmin: boolean;
 }
 
+// Tüm rolleri ve gösterilecek adlarını bir diziye alalım
+// Bu, Object.keys(UserRole) kullanmaktan daha güvenilirdir çünkü sıralamayı kontrol edebiliriz.
+const ALL_ROLES: { value: UserRole; label: string }[] = [
+    { value: 'USER', label: 'Kullanıcı' },
+    { value: 'VOICE_ACTOR', label: 'Ses Sanatçısı' },
+    { value: 'TRANSLATOR', label: 'Çevirmen' },
+    { value: 'MIX_MASTER', label: 'Mix/Master' },
+    { value: 'MODDER', label: 'Modder' },
+    { value: 'MODERATOR', label: 'Moderatör' },
+    { value: 'ADMIN', label: 'Admin' },
+];
+
+
 export default function UpdateUserRole({ userId, currentRole, username, isCurrentUserAdmin }: UpdateUserRoleProps) {
   const router = useRouter();
-  // --- DEĞİŞİKLİK 2: State'in tipi de UserRole olacak ---
   const [selectedRole, setSelectedRole] = useState<UserRole>(currentRole);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -25,17 +37,13 @@ export default function UpdateUserRole({ userId, currentRole, username, isCurren
   }, [currentRole]);
 
   const handleRoleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    // --- DEĞİŞİKLİK 3: Gelen değeri UserRole olarak cast ediyoruz ---
     setSelectedRole(event.target.value as UserRole);
     setError(null);
     setSuccessMessage(null);
   };
 
   const handleSubmit = async () => {
-    if (selectedRole === currentRole) {
-      setError('Yeni rol, mevcut rolle aynı. Değişiklik yapılmadı.');
-      return;
-    }
+    if (selectedRole === currentRole) return;
     if (isCurrentUserAdmin) {
       setError('Admin kendi rolünü değiştiremez.');
       return;
@@ -48,53 +56,40 @@ export default function UpdateUserRole({ userId, currentRole, username, isCurren
       try {
         const response = await fetch(`/api/admin/users/${userId}`, {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ role: selectedRole }),
         });
 
         const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Bir hata oluştu.');
 
-        if (!response.ok) {
-          const errorMessage = data.errors?.role?.[0] || data.message || 'Rol güncellenirken bir hata oluştu.';
-          setError(errorMessage);
-          return;
-        }
-
-        setSuccessMessage(data.message || 'Kullanıcının rolü başarıyla güncellendi.');
-        router.refresh();
+        setSuccessMessage(data.message);
+        router.refresh(); // Sayfanın verilerini yeniden yükle
       } catch (err) {
-        console.error('Rol güncelleme işlemi sırasında hata:', err);
-        setError('Bir ağ hatası oluştu veya sunucudan geçersiz yanıt alındı.');
+        setError((err as Error).message);
       }
     });
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+    <div className="flex items-center space-x-2">
       <select
         value={selectedRole}
         onChange={handleRoleChange}
         disabled={isPending || isCurrentUserAdmin}
-        className={`p-1 border rounded text-sm w-full sm:w-auto
-          ${isCurrentUserAdmin ? 'bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400' : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white'}`}
-        title={isCurrentUserAdmin ? "Admin kendi rolünü değiştiremez" : `"${username}" kullanıcısının rolünü değiştir`}
+        className={`p-1 border rounded text-sm w-40
+          ${isCurrentUserAdmin ? 'bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white'}`}
+        title={isCurrentUserAdmin ? "Admin kendi rolünü değiştiremez" : `Rolü değiştir`}
       >
-        {/* --- DEĞİŞİKLİK 4: Dropdown'a Moderatör seçeneğini ekliyoruz --- */}
-        {/* Not: Değerler Prisma Enum'u ile aynı olmalı: USER, ADMIN, MODERATOR */}
-        <option value="USER">Kullanıcı</option>
-        <option value="MODERATOR">Moderatör</option>
-        <option value="ADMIN">Admin</option>
+        {/* Yeni rol listesi üzerinden <option> elemanlarını dinamik olarak oluşturuyoruz */}
+        {ALL_ROLES.map(role => (
+            <option key={role.value} value={role.value}>{role.label}</option>
+        ))}
       </select>
       <button
         onClick={handleSubmit}
         disabled={isPending || isCurrentUserAdmin || selectedRole === currentRole}
-        className={`px-3 py-1 text-sm font-medium rounded text-white transition-colors w-full sm:w-auto
-          ${(isCurrentUserAdmin || selectedRole === currentRole)
-            ? 'bg-gray-400 cursor-not-allowed'
-            : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 disabled:opacity-60'
-          }`}
+        className="px-3 py-1 text-sm font-medium rounded text-white transition-colors bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
       >
         {isPending ? 'Güncelleniyor...' : 'Rolü Güncelle'}
       </button>

@@ -17,19 +17,28 @@ import GiftGameModal from '@/components/admin/GiftGameModal';
 import UpdateUserRole from '@/components/admin/UpdateUserRole';
 import DeleteUserButton from '@/components/admin/DeleteUserButton';
 import BanUserButton from '@/components/admin/BanUserButton';
-// --- 1. YENİ BİLEŞENİ IMPORT ET ---
 import ResetPasswordButton from '@/components/admin/ResetPasswordModal';
 
 // Rol etiketleri için yardımcı bileşen
 const RoleBadge = ({ role }: { role: UserRole }) => {
+  // --- DEĞİŞİKLİK BURADA ---
+  // Yeni roller için stil tanımlamalarını ekliyoruz.
   const roleStyles = {
-    [UserRole.ADMIN]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    [UserRole.MODERATOR]: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
+    [UserRole.ADMIN]: 'bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200',
+    [UserRole.MODERATOR]: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
     [UserRole.USER]: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+    [UserRole.VOICE_ACTOR]: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    [UserRole.TRANSLATOR]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    [UserRole.MODDER]: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    [UserRole.MIX_MASTER]: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
   };
+  
+  // Rol adını daha okunaklı hale getirelim (örn: MIX_MASTER -> Mix Master)
+  const formattedRole = role.replace('_', ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+
   return (
-    <span className={`px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${roleStyles[role]}`}>
-      {role.charAt(0) + role.slice(1).toLowerCase()}
+    <span className={`px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${roleStyles[role] || roleStyles.USER}`}>
+      {formattedRole}
     </span>
   );
 };
@@ -55,6 +64,7 @@ export default function UsersClientPage({ users, allGames, currentAdminId }: Use
     setIsModalOpen(false);
   };
 
+  // Render mantığının geri kalanı aynı
   return (
     <>
       <GiftGameModal
@@ -118,7 +128,6 @@ export default function UsersClientPage({ users, allGames, currentAdminId }: Use
                             <Gift className="w-5 h-5" />
                         </button>
                         
-                        {/* --- 2. YENİ BUTONU DİĞERLERİNİN YANINA EKLE --- */}
                         <ResetPasswordButton
                           userId={user.id}
                           username={user.username}

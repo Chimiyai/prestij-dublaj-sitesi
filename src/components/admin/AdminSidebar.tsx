@@ -1,13 +1,18 @@
+// src/components/admin/AdminSidebar.tsx
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { UserRole } from '@prisma/client';
-import { LayoutDashboard, Users, Library, Mic2, LayoutGrid, ShieldAlert, Handshake, BarChart3, Lightbulb, HeartPlus, TextCursorIcon } from 'lucide-react';
+// Gerekli yeni ikonları import ediyoruz
+import { 
+    LayoutDashboard, Users, Library, Mic2, LayoutGrid, ShieldAlert, Handshake, 
+    BarChart3, Lightbulb, HeartPlus, Text, ListTodo, PlusCircle 
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// 1. Veri Yapısını Gruplara Ayırdık
+// Sidebar veri yapısını yeni roller ve linklerle güncelliyoruz
 const sidebarGroups = [
   {
     title: 'Genel',
@@ -17,13 +22,39 @@ const sidebarGroups = [
     ]
   },
   {
+    // --- YENİ GRUP: Prodüksiyon ---
+    title: 'Prodüksiyon',
+    links: [
+      { 
+        href: "/admin/gorevler", 
+        label: "Görevlerim", 
+        icon: ListTodo, 
+        // Görevleri olan herkes bu sayfayı görebilir
+        allowedRoles: [UserRole.VOICE_ACTOR, UserRole.MIX_MASTER, UserRole.MODDER, UserRole.TRANSLATOR, UserRole.ADMIN, UserRole.MODERATOR] 
+      },
+      { 
+        href: "/admin/gorevler/yeni", 
+        label: "Yeni Görev Oluştur", 
+        icon: PlusCircle, 
+        // Sadece görev oluşturabilen roller
+        allowedRoles: [UserRole.TRANSLATOR, UserRole.ADMIN, UserRole.MODERATOR] 
+      },
+      { 
+        href: "/ceviri", 
+        label: "Metin Editörü", 
+        icon: Text, 
+        // Çeviri aracına erişebilecek roller
+        allowedRoles: [UserRole.TRANSLATOR, UserRole.ADMIN, UserRole.MODERATOR] 
+      },
+    ]
+  },
+  {
     title: 'İçerik Yönetimi',
     links: [
       { href: "/admin/projeler", label: "Projeler", icon: Library, allowedRoles: [UserRole.ADMIN] },
       { href: "/admin/sanatcilar", label: "Sanatçılar", icon: Mic2, allowedRoles: [UserRole.ADMIN, UserRole.MODERATOR] },
       { href: "/admin/kategoriler", label: "Kategoriler", icon: LayoutGrid, allowedRoles: [UserRole.ADMIN] },
       { href: "/admin/katkilar", label: "Katkılar", icon: HeartPlus, allowedRoles: [UserRole.ADMIN, UserRole.MODERATOR] },
-      { href: "/ceviri", label: "Çeviri", icon: TextCursorIcon, allowedRoles: [UserRole.ADMIN, UserRole.MODERATOR] },
     ]
   },
   {
@@ -42,6 +73,8 @@ export default function AdminSidebar() {
   const { data: session } = useSession();
   const userRole = session?.user?.role;
 
+  // Render mantığında hiçbir değişiklik yapmaya gerek yok,
+  // çünkü zaten dinamik ve rol tabanlı çalışıyor.
   return (
     <aside className="w-64 flex-shrink-0 bg-white dark:bg-gray-900 p-4 border-r border-gray-200 dark:border-gray-800 flex flex-col">
       <div className="mb-8">
@@ -50,27 +83,24 @@ export default function AdminSidebar() {
         </Link>
       </div>
       <nav className="flex-grow">
-        {/* 2. Render Mantığını Güncelledik: Gruplar üzerinde döngü */}
         {sidebarGroups.map((group) => {
-          // Kullanıcının rolüne göre erişebileceği linkleri filtrele
           const accessibleLinks = group.links.filter(link => 
             userRole && link.allowedRoles.includes(userRole)
           );
 
-          // Eğer bu grupta erişilebilecek hiç link yoksa, grubu hiç gösterme
           if (accessibleLinks.length === 0) {
             return null;
           }
 
           return (
-            <div key={group.title} className="mb-4">
-              {/* 3. Grup Başlığını Ekledik ve Stillendirdik */}
+            <div key={group.title} className="mb-6">
               <h3 className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 {group.title}
               </h3>
               <ul>
                 {accessibleLinks.map(link => {
-                  const isActive = pathname === link.href;
+                  // Aktif link kontrolünü, alt sayfaları da kapsayacak şekilde güncelleyelim
+                  const isActive = pathname === link.href || (link.href !== '/admin' && pathname.startsWith(link.href));
                   return (
                     <li key={link.href} className="mb-1">
                       <Link

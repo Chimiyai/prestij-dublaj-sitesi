@@ -5,17 +5,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import { z } from 'zod';
+import { UserRole } from '@prisma/client'; // UserRole enum'ını import et
 
-// --- DEĞİŞİKLİK BURADA ---
+// --- DEĞİŞİKLİK 1: Zod şemasını tüm rolleri içerecek şekilde güncelle ---
+// Object.values(UserRole) kullanarak şemayı dinamik hale getiriyoruz.
 const updateUserRoleSchema = z.object({
-  role: z.enum(['USER', 'ADMIN', 'MODERATOR'], { // MODERATOR eklendi
-    errorMap: () => ({ message: "Geçersiz rol. Rol 'USER', 'MODERATOR' veya 'ADMIN' olmalıdır." }),
+  role: z.enum(Object.values(UserRole) as [string, ...string[]], {
+    errorMap: () => ({ message: "Geçersiz bir rol belirtildi." }),
   }),
 });
-
-// --- DEĞİŞİKLİK BURADA ---
-// PATCH ve DELETE fonksiyonlarının geri kalanı DEĞİŞMEYECEK.
-// Sadece PATCH içindeki let newRole: 'USER' | 'ADMIN'; satırını güncellemeliyiz.
 
 export async function PATCH(
   request: NextRequest,
@@ -26,26 +24,19 @@ export async function PATCH(
     return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 403 });
   }
 
-  const resolvedParams = await params; // params'ı çöz
-  const userIdString = resolvedParams.userId;
-
-  if (!userIdString || typeof userIdString !== 'string' || userIdString.trim() === "") {
-    return NextResponse.json({ message: 'Eksik veya geçersiz kullanıcı ID parametresi.' }, { status: 400 });
-  }
-  const userIdToUpdateAsInt = parseInt(userIdString, 10);
+  const resolvedParams = await params;
+  const userIdToUpdateAsInt = parseInt(resolvedParams.userId, 10);
 
   if (isNaN(userIdToUpdateAsInt)) {
     return NextResponse.json({ message: 'Geçersiz kullanıcı ID formatı.' }, { status: 400 });
   }
 
-  if (session.user.id === userIdString) { // Karşılaştırmayı string üzerinden yapabiliriz veya ikisini de parse edebiliriz
-    return NextResponse.json(
-      { message: 'Admin kendi rolünü değiştiremez.' },
-      { status: 400 }
-    );
+  if (session.user.id === resolvedParams.userId) {
+    return NextResponse.json({ message: 'Admin kendi rolünü değiştiremez.' }, { status: 400 });
   }
-
-  let newRole: 'USER' | 'ADMIN' | 'MODERATOR';
+  
+  // --- DEĞİŞİKLİK 2: newRole tipini daha esnek hale getir ---
+  let newRole: UserRole; // Artık tüm UserRole enum'larını kabul edebilir.
   try {
     const body = await request.json();
     const parsedBody = updateUserRoleSchema.safeParse(body);
@@ -53,35 +44,24 @@ export async function PATCH(
     if (!parsedBody.success) {
       return NextResponse.json({ message: 'Geçersiz veri.', errors: parsedBody.error.flatten().fieldErrors }, { status: 400 });
     }
-    newRole = parsedBody.data.role;
+    newRole = parsedBody.data.role as UserRole;
   } catch (error) {
     return NextResponse.json({ message: 'İstek body hatalı veya JSON formatında değil.' }, { status: 400 });
   }
 
   try {
-    const userToUpdate = await prisma.user.findUnique({
-      where: { id: userIdToUpdateAsInt },
-    });
-
-    if (!userToUpdate) {
-      return NextResponse.json({ message: 'Rolü güncellenecek kullanıcı bulunamadı.' }, { status: 404 });
-    }
-
     const updatedUser = await prisma.user.update({
       where: { id: userIdToUpdateAsInt },
       data: { role: newRole },
     });
 
     return NextResponse.json(
-      { message: `'${updatedUser.username}' adlı kullanıcının rolü başarıyla '${newRole}' olarak güncellendi.` },
+      { message: `'${updatedUser.username}' kullanıcısının rolü güncellendi.` },
       { status: 200 }
     );
   } catch (error) {
     console.error('Kullanıcı rolü güncelleme hatası:', error);
-    return NextResponse.json(
-      { message: 'Kullanıcı rolü güncellenirken sunucuda bir hata oluştu.', error: (error as Error).message },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: 'Kullanıcı rolü güncellenirken bir hata oluştu.' }, { status: 500 });
   }
 }
 

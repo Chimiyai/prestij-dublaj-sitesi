@@ -82,7 +82,7 @@ const Header = () => {
   const userIsAdminOrModerator = 
     !isLoadingSession && 
     session?.user?.role && 
-    [UserRole.ADMIN, UserRole.MODERATOR].includes(session.user.role);
+    [UserRole.ADMIN, UserRole.MODERATOR, UserRole.TRANSLATOR, UserRole.VOICE_ACTOR, UserRole.MIX_MASTER, UserRole.MODDER].includes(session.user.role);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
