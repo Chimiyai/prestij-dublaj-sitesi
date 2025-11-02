@@ -23,14 +23,15 @@ const saveFileToVDS = async (file: File, folder: string, fileName: string): Prom
 };
 
 
-export async function PATCH(request: NextRequest, { params }: { params: { taskId: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ message: 'Yetkisiz erişim.' }, { status: 401 });
     }
     
     try {
-      const taskId = parseInt(params.taskId, 10);
+      const resolvedParams = await params;
+      const taskId = parseInt(resolvedParams.taskId, 10);
       const formData = await request.formData();
       const action = formData.get('action') as string;
   

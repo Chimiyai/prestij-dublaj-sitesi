@@ -1,13 +1,14 @@
 // src/app/bize-katil/_components/ApplicationForm.tsx
 'use client';
 
-import { ChangeEvent, FormEvent, useState } from 'react';
+import { ChangeEvent, FormEvent, useState, Fragment } from 'react'; // Fragment'ı import et
 import { ApplicationFormData, SocialLink } from './BizeKatilClientPage';
-import { PlusIcon, TrashIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, UserCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'; // ExclamationTriangleIcon'u import et
 import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { Dialog, Transition } from '@headlessui/react'; // headlessui'yi import et
 
 // Statik Rol Listesi
 const availableRoles = [
@@ -30,6 +31,7 @@ export function ApplicationForm({ formData, setFormData }: ApplicationFormProps)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<SocialLink['platform']>(availablePlatforms[0]);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -90,57 +92,110 @@ export function ApplicationForm({ formData, setFormData }: ApplicationFormProps)
     }
   };
   
-  const handleSubmit = async (e: FormEvent) => {
+  // 1. Ana "Başvuruyu Gönder" butonunun tetikleyeceği fonksiyon
+  const handleOpenConfirmation = (e: FormEvent) => {
     e.preventDefault();
     
-    // Form Doğrulama Kontrolleri
     if (formData.roles.length === 0) { toast.error('Lütfen en az bir unvan/yetenek seçin.'); return; }
     if (!formData.profileImage || formData.profileImage.publicId === 'uploading') { toast.error('Lütfen bir profil fotoğrafı yükleyin ve yüklemenin bitmesini bekleyin.'); return; }
     if (!formData.workSampleUrl.trim()) { toast.error('Lütfen çalışma örneği linkini girin.'); return; }
 
+    setIsConfirmModalOpen(true);
+  };
+
+  // 2. Modal'ın içindeki "Onayla ve Gönder" butonunun tetikleyeceği asıl gönderme fonksiyonu
+  const handleFinalSubmit = async () => {
+    setIsConfirmModalOpen(false);
     setIsSubmitting(true);
     const toastId = toast.loading('Başvurunuz gönderiliyor...');
 
-    // API'ye gönderilecek veriyi, o anki state'in en güncel halinden oluştur.
-    // Bu, asenkron state güncellemelerinden kaynaklanabilecek hataları önler.
     const payload = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phoneNumber: formData.phoneNumber,
-        roles: formData.roles,
-        bio: formData.bio,
-        socialLinks: formData.socialLinks,
-        profileImagePublicId: formData.profileImage.publicId,
-        workSampleUrl: formData.workSampleUrl,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      phoneNumber: formData.phoneNumber,
+      roles: formData.roles,
+      bio: formData.bio,
+      socialLinks: formData.socialLinks,
+      profileImagePublicId: formData.profileImage!.publicId, // Non-null assertion, çünkü yukarıda kontrol ettik
+      workSampleUrl: formData.workSampleUrl,
     };
 
     try {
-        const response = await fetch('/api/applications', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
-        const result = await response.json();
-        if (!response.ok) {
-            if (result.errors) {
-                const firstError = Object.values(result.errors._errors || result.errors)[0];
-                throw new Error(Array.isArray(firstError) ? firstError[0] : 'Form verisi geçersiz.');
-            }
-            throw new Error(result.message || 'Başvuru gönderilemedi.');
-        }
-        toast.success('Başvurunuz başarıyla alındı! Teşekkür ederiz.', { id: toastId, duration: 4000 });
-        router.refresh();
+      const response = await fetch('/api/applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Başvuru gönderilemedi.');
+      
+      toast.success('Başvurunuz başarıyla alındı! Teşekkür ederiz.', { id: toastId, duration: 4000 });
+      router.refresh();
     } catch (error) {
-        toast.error((error as Error).message, { id: toastId });
+      toast.error((error as Error).message, { id: toastId });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
   const remainingPlatforms = availablePlatforms.filter(p => !formData.socialLinks.some(link => link.platform === p));
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-6 sm:p-8 bg-gray-900/50 border border-gray-800 rounded-xl shadow-2xl">
+    <>
+      <Transition appear show={isConfirmModalOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={() => setIsConfirmModalOpen(false)}>
+          <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+            <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
+                <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-2xl bg-[#08060D] border border-gray-600 p-6 text-left align-middle shadow-xl transition-all">
+                  <div className="flex items-start">
+                    <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-yellow-900/50 sm:mx-0 sm:h-10 sm:w-10">
+                      <ExclamationTriangleIcon className="h-6 w-6 text-yellow-400" aria-hidden="true" />
+                    </div>
+                    <div className="ml-4 text-left">
+                      <Dialog.Title as="h3" className="text-lg font-bold leading-6 text-white">
+                        Başvuruyu Onayla
+                      </Dialog.Title>
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-300">
+                          Başvurunuzun kabul edilmesi durumunda, formda belirttiğiniz isim, soyisim, bio, profil resmi ve sosyal medya linkleri gibi kişisel bilgilerinizin "Kadromuz" sayfasında herkese açık olarak yayınlanacağını anlıyor ve kabul ediyor musunuz?
+                        </p>
+                        <p className='text-xs text-gray-500 mt-2'>
+                          Telefon numarası gibi iletişim bilgileriniz kesinlikle gizli tutulacaktır.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-5 sm:mt-6 sm:flex sm:flex-row-reverse">
+                    <button
+                      type="button"
+                      className="inline-flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+                      onClick={handleFinalSubmit}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Gönderiliyor...' : 'Onayla ve Gönder'}
+                    </button>
+                    <button
+                      type="button"
+                      className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-600 bg-gray-700 px-4 py-2 text-base font-medium text-gray-200 shadow-sm hover:bg-gray-600 sm:mt-0 sm:w-auto sm:text-sm"
+                      onClick={() => setIsConfirmModalOpen(false)}
+                    >
+                      İptal
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      {/* Ana Form (onSubmit değiştirildi) */}
+      <form onSubmit={handleOpenConfirmation} className="space-y-6 p-6 sm:p-8 bg-gray-900/50 border border-gray-800 rounded-xl shadow-2xl">
       <h2 className="text-2xl font-bold text-white border-b border-gray-800 pb-4">Başvuru Formu</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div><label htmlFor="firstName" className="form-label">İsim *</label><input type="text" name="firstName" id="firstName" value={formData.firstName} onChange={handleInputChange} className="form-input" required /></div>
@@ -195,7 +250,7 @@ export function ApplicationForm({ formData, setFormData }: ApplicationFormProps)
       <div className="border-t border-gray-800 pt-6 space-y-4">
       <h3 className="text-lg font-semibold text-white">Gerekli Dosyalar</h3>
         <div>
-          <label className="form-label">Profil Fotoğrafı (Özçekim) *</label>
+          <label className="form-label">Profil Fotoğrafı (Özçekim/pp) *</label>
           <div className="mt-2 flex items-center gap-4">
             <div className="w-20 h-20 rounded-full bg-[#110E1B] border border-[#37304F] flex items-center justify-center overflow-hidden">
               {formData.profileImage?.url ? (<Image src={formData.profileImage.url} alt="Önizleme" width={80} height={80} className="object-cover w-full h-full" />) : (<UserCircleIcon className="w-12 h-12 text-gray-600" />)}
@@ -212,9 +267,12 @@ export function ApplicationForm({ formData, setFormData }: ApplicationFormProps)
           <p className="text-xs text-gray-500 mt-1">Lütfen linkin "herkesin erişimine açık" olduğundan emin olun.</p>
         </div>
       </div>
-      <button type="submit" className="btn-primary" disabled={isSubmitting || isUploading}>
-        {isSubmitting ? 'Gönderiliyor...' : 'Başvuruyu Gönder'}
-      </button>
-    </form>
+      <div className="pt-4 border-t border-gray-800">
+          <button type="submit" className="btn-primary w-full" disabled={isSubmitting || isUploading}>
+            {isSubmitting ? 'Gönderiliyor...' : 'Başvuruyu Gönder'}
+          </button>
+        </div>
+      </form>
+    </>
   );
-}
+};
