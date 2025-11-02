@@ -30,6 +30,7 @@ export interface ArtistFormDataForEdit {
   donationLink: string | null;
   isTeamMember: boolean; // Prisma'da Boolean @default(false)
   teamOrder: number | null; // Prisma'da Int?
+  userId: number | null;
 }
 
 interface FormErrors {
@@ -41,8 +42,14 @@ interface FormErrors {
   // ... diğer olası hata alanları
 }
 
+type UserSelectItem = {
+  id: number;
+  username: string;
+};
+
 interface EditArtistFormProps {
-  artist?: ArtistFormDataForEdit; // Düzenleme için (initialArtistData bu tipte olmalı)
+  artist?: ArtistFormDataForEdit;
+  allUsers: UserSelectItem[]; // YENİ: Tüm kullanıcıları prop olarak al
   isEditing: boolean;
 }
 
@@ -63,10 +70,11 @@ interface ArtistApiPayload {
   donationLink?: string | null;
   isTeamMember?: boolean;
   teamOrder?: number | null;
+  userId?: number | null;
 }
 
 
-export default function EditArtistForm({ artist: initialArtistData, isEditing }: EditArtistFormProps) {
+export default function EditArtistForm({ artist: initialArtistData, allUsers, isEditing }: EditArtistFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [errors, setErrors] = useState<any>({}); // Daha spesifik bir tip tanımlanabilir
@@ -89,6 +97,7 @@ export default function EditArtistForm({ artist: initialArtistData, isEditing }:
   const [donationLink, setDonationLink] = useState(initialArtistData?.donationLink || '');
   const [isTeamMember, setIsTeamMember] = useState(initialArtistData?.isTeamMember || false); // Varsayılan false
   const [teamOrder, setTeamOrder] = useState(initialArtistData?.teamOrder?.toString() || ''); // Sayıyı string'e çevir
+  const [userId, setUserId] = useState(initialArtistData?.userId?.toString() || '');
 
 
   // İsim veya soyisim değiştikçe slug'ı otomatik güncelle
@@ -203,6 +212,7 @@ export default function EditArtistForm({ artist: initialArtistData, isEditing }:
         donationLink: donationLink.trim() === '' ? null : donationLink.trim(),
         isTeamMember,
         teamOrder: teamOrder.trim() === '' ? null : parseInt(teamOrder, 10),
+        userId: userId === '' ? null : parseInt(userId, 10),
       };
       
       if (!isEditing || !initialArtistData?.id) {
@@ -271,6 +281,27 @@ export default function EditArtistForm({ artist: initialArtistData, isEditing }:
         />
         {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName.join(', ')}</p>}
       </div>
+      <div className="mt-6">
+            <label htmlFor="userId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Bağlı Kullanıcı Hesabı (Opsiyonel)
+            </label>
+            <select
+                id="userId"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-gray-200"
+            >
+                <option value="">-- Kullanıcıya Bağlı Değil --</option>
+                {allUsers.map(user => (
+                    <option key={user.id} value={user.id}>
+                        {user.username}
+                    </option>
+                ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+                Bu sanatçı profilini bir kullanıcı hesabına bağlayarak, o kullanıcının kendi profilini düzenlemesine izin verebilirsiniz.
+            </p>
+        </div>
       <div>
         <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Soyisim <span className="text-red-500">*</span>

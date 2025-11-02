@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) {
     return NextResponse.json({ message: 'Yetkisiz erişim: Oturum bulunamadı.' }, { status: 401 });
   }
-  const { id: userId, role: userRole } = session.user;
+  const { id: userId, role: userRole, artistProfileId } = session.user;
 
   let formData;
   try {
@@ -64,13 +64,28 @@ export async function POST(request: NextRequest) {
         maxFileSizeMB = 5;
         break;
       case 'artistProfile':
-      case 'projectCover':
-        if (userRole !== UserRole.ADMIN) throw new Error('Bu işlem için yönetici yetkisi gerekli.');
-        targetFolder = uploadContext === 'artistProfile' ? 'artist_profiles' : 'project_covers';
-        break;
-      default:
-        return NextResponse.json({ message: 'Geçersiz yükleme bağlamı.' }, { status: 400 });
-    }
+        case 'artistProfile':
+          // Gelen 'identifier' (sanatçı ID'si) ile kullanıcının session'daki 
+          // artistProfileId'si eşleşiyor mu diye kontrol et.
+          const isOwner = artistProfileId && identifierFromForm === artistProfileId.toString();
+  
+          // Eğer kullanıcı ADMIN DEĞİLSE VE profilin sahibi DEĞİLSE, hata ver.
+          if (userRole !== UserRole.ADMIN && !isOwner) {
+            throw new Error('Bu sanatçı profilini düzenleme yetkiniz yok.');
+          }
+          
+          targetFolder = 'artist_profiles';
+          maxFileSizeMB = 2; // Bu context için dosya boyutunu belirleyelim
+          break;
+  
+        case 'projectCover':
+          if (userRole !== UserRole.ADMIN) throw new Error('Bu işlem için yönetici yetkisi gerekli.');
+          targetFolder = 'project_covers';
+          break;
+        
+        default:
+          return NextResponse.json({ message: 'Geçersiz yükleme bağlamı.' }, { status: 400 });
+      }
     
     if (!file.type.startsWith('image/')) {
         return NextResponse.json({ message: `Geçersiz dosya tipi: ${file.type}. Sadece resim dosyaları kabul edilir.` }, { status: 400 });

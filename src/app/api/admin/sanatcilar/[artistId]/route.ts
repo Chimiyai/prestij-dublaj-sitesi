@@ -36,6 +36,7 @@ const updateArtistSchema = z.object({
   donationLink: z.string().url({ message: "Geçersiz bağış URL'i." }).or(z.literal('')).nullable().optional().transform(val => val === '' ? null : val),
   isTeamMember: z.boolean().optional(),
   teamOrder: z.number().int("Sıralama tam sayı olmalı.").nullable().optional(),
+  userId: z.number().int().nullable().optional(),
 });
 
 // getArchivePublicIdForArtist fonksiyonu
@@ -92,6 +93,7 @@ export async function PUT(
         donationLink: true,
         isTeamMember: true,
         teamOrder: true,
+        userId: true,
       }
     });
 
@@ -110,6 +112,23 @@ export async function PUT(
     const dataToUpdateFromClient = parsedBody.data;
     const dataToActuallyUpdate: Prisma.DubbingArtistUpdateInput = {};
     let hasChanges = false;
+
+    if (
+      dataToUpdateFromClient.userId && // Yeni bir userId var
+      dataToUpdateFromClient.userId !== currentArtist.userId // ve bu ID eskisinden farklı
+  ) {
+      const existingUserLink = await prisma.dubbingArtist.findFirst({
+          where: {
+              userId: dataToUpdateFromClient.userId,
+              NOT: { id: artistIdAsInt } // Kendisi hariç
+          }
+      });
+      if (existingUserLink) {
+          return NextResponse.json({ 
+              errors: { userId: ['Bu kullanıcı zaten başka bir sanatçı profiline atanmış.'] }
+          }, { status: 409 }); // 409 Conflict
+      }
+  }
 
     // Değişiklik kontrolü ve dataToActuallyUpdate'i doldurma
     for (const key in dataToUpdateFromClient) {

@@ -1,9 +1,11 @@
 // src/components/profile/UserProfileForm.tsx
 'use client';
 
+import EditArtistProfileModal from './EditArtistProfileModal';
 import { useState, FormEvent, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 // User tipini Prisma'dan import etmeye gerek yok, UserProfileFormProps içinde tanımlı
 // import { User } from '@prisma/client'; 
 import ProfileImageUploader from '@/components/profile/ProfileImageUploader';
@@ -18,25 +20,14 @@ import { CldImage } from 'next-cloudinary';
 import { UserCircleIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
-
+import { User, DubbingArtist } from '@prisma/client';
 
 export interface UserProfileFormProps { 
-  user: { 
-    id: number; 
-    username: string;
-    firstName: string | null;
-    lastName: string | null;
-    bio: string | null;
-    email: string;
-    role: string;
-    profileImagePublicId: string | null;
-    bannerImagePublicId: string | null;
-    createdAt: Date; 
-    updatedAt: Date; 
-  };
+  user: User;
+  artistProfile: (DubbingArtist & { userId: number | null }) | null; // Gelen sanatçı verisi
 }
 
-export default function UserProfileForm({ user: initialUser }: UserProfileFormProps) {
+export default function UserProfileForm({ user: initialUser, artistProfile }: UserProfileFormProps) {
   const router = useRouter();
   const { data: session, update: updateSession } = useSession();
   // isPending, startTransition'dan gelen boolean değer
@@ -185,9 +176,21 @@ export default function UserProfileForm({ user: initialUser }: UserProfileFormPr
       }
   });
 };
+const artistProfileId = session?.user?.artistProfileId;
+const [isArtistModalOpen, setIsArtistModalOpen] = useState(false);
 
 
-  return (
+return (
+  <>
+    {/* Modal'ı burada render ediyoruz, ama başlangıçta gizli */}
+    {artistProfile && (
+      <EditArtistProfileModal
+        isOpen={isArtistModalOpen}
+        onClose={() => setIsArtistModalOpen(false)}
+        artistProfile={artistProfile}
+      />
+    )}
+  
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       {/* Banner */}
       <div className="w-full h-48 sm:h-64 md:h-80 bg-gray-300 dark:bg-gray-700 relative">
@@ -252,6 +255,20 @@ export default function UserProfileForm({ user: initialUser }: UserProfileFormPr
             </div>
             
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-6 border-b pb-2 dark:border-gray-700">Hesap Ayarları</h2>
+            {artistProfile && (
+                  <div className="bg-indigo-50 dark:bg-indigo-900/30 p-4 rounded-lg mb-8 text-center">
+                      <h3 className="text-lg font-semibold text-indigo-800 dark:text-indigo-200">Sanatçı Profiliniz Aktif!</h3>
+                      <p className="text-sm text-indigo-700 dark:text-indigo-300 mt-1 mb-3">
+                          Size atanan sanatçı profilini düzenlemek için aşağıdaki butonu kullanabilirsiniz.
+                      </p>
+                      <button 
+                          onClick={() => setIsArtistModalOpen(true)} // Tıklandığında modal state'ini true yap
+                          className="inline-block px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md shadow-md transition-transform transform hover:scale-105"
+                      >
+                          Sanatçı Profilini Düzenle
+                      </button>
+                  </div>
+              )}
 
             <div className="space-y-8">
             <form onSubmit={handleNameSave} className="p-6 md:p-0 border-t md:border-0 border-gray-200 dark:border-gray-700 md:pt-0">
@@ -322,5 +339,6 @@ export default function UserProfileForm({ user: initialUser }: UserProfileFormPr
         </div>
       </div>
     </div>
-  );
+  </>
+);
 }

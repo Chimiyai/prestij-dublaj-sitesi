@@ -6,11 +6,18 @@ import type { Metadata } from 'next';
 import AdminPageLayout from '@/components/admin/AdminPageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+type UserSelectItem = {
+  id: number;
+  username: string;
+};
+
 // --- Veri Çekme ve İşleme Fonksiyonu ---
-async function getArtist(artistId: number) {
-  const artistFromDb = await prisma.dubbingArtist.findUnique({
-    where: { id: artistId },
-    select: {
+async function getArtistAndUsers(artistId: number) {
+  // Sanatçı ve kullanıcı listesini TEK SEFERDE, aynı anda çekiyoruz (daha performanslı)
+  const [artistFromDb, allUsers] = await Promise.all([
+    prisma.dubbingArtist.findUnique({
+      where: { id: artistId },
+      select: {
       id: true,
       firstName: true,
       lastName: true,
@@ -27,12 +34,18 @@ async function getArtist(artistId: number) {
       donationLink: true,
       isTeamMember: true,
       teamOrder: true,
+      userId: true,
     }
-  });
+  }),
+  prisma.user.findMany({
+    select: { id: true, username: true },
+    orderBy: { username: 'asc' }
+  })
+]);
 
-  if (!artistFromDb) {
-    return null;
-  }
+if (!artistFromDb) {
+  return { artist: null, allUsers: [] };
+}
 
   // Prisma'dan gelen veriyi formun beklediği tipe dönüştür
   const artistForForm: ArtistFormDataForEdit = {
@@ -52,9 +65,10 @@ async function getArtist(artistId: number) {
     donationLink: artistFromDb.donationLink || null,
     isTeamMember: artistFromDb.isTeamMember,
     teamOrder: artistFromDb.teamOrder === null ? null : Number(artistFromDb.teamOrder),
+    userId: artistFromDb.userId || null,
   };
 
-  return artistForForm;
+  return { artist: artistForForm, allUsers };
 }
 
 // --- Metadata Fonksiyonu (generateMetadata) ---
@@ -79,13 +93,16 @@ export async function generateMetadata({ params }: { params: Promise<{ artistId:
 
 // --- Sayfa Bileşeni (EditSanatciPage) ---
 export default async function EditSanatciPage({ params }: { params: Promise<{ artistId: string }> }) {
-  const { artistId } = await params; // await ile bekle
+  const { artistId } = await params;
   const artistIdAsNumber = parseInt(artistId, 10);
 
   if (isNaN(artistIdAsNumber)) {
     notFound();
   }
-  const artist = await getArtist(artistIdAsNumber);
+  
+  // Yeni fonksiyonumuzu çağırıyoruz
+  const { artist, allUsers } = await getArtistAndUsers(artistIdAsNumber);
+
   if (!artist) {
     notFound();
   }
@@ -98,12 +115,12 @@ export default async function EditSanatciPage({ params }: { params: Promise<{ ar
 
   return (
     <AdminPageLayout pageTitle="Sanatçı Yönetimi" breadcrumbs={breadcrumbs}>
-      {/* 
-        Form doğrudan EditArtistForm bileşenine aktarılacak.
-        Bu sayfanın görevi, layout'u kurmak ve veriyi sağlamak.
-        Asıl tasarım ve gruplama mantığı EditArtistForm içinde olacak.
-      */}
-      <EditArtistForm artist={artist} isEditing={true} />
+      {/* Forma hem sanatçı bilgisini hem de kullanıcı listesini prop olarak geçiyoruz */}
+      <EditArtistForm 
+        artist={artist} 
+        allUsers={allUsers}
+        isEditing={true} 
+      />
     </AdminPageLayout>
   );
 }

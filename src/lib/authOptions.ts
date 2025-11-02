@@ -3,6 +3,7 @@ import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcrypt';
+import { UserRole } from '@prisma/client'; // UserRole'ü import et
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -15,13 +16,26 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null;
         
-        const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+        const user = await prisma.user.findUnique({ 
+            where: { email: credentials.email },
+            // --- DEĞİŞİKLİK 1: artistProfile ilişkisini de çek ---
+            include: {
+                artistProfile: {
+                    select: { id: true }
+                }
+            }
+        });
         if (!user || !user.password) return null;
 
         const isValidPassword = await bcrypt.compare(credentials.password, user.password);
         if (!isValidPassword) return null;
         
-        return { ...user, id: user.id.toString() };
+        // artistProfileId'yi user objesine ekleyerek döndür
+        return { 
+            ...user, 
+            id: user.id.toString(),
+            artistProfileId: user.artistProfile?.id || null
+        };
       }
     })
   ],
@@ -29,64 +43,47 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
   
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user }) {
       // 1. İlk Giriş Anı
       if (user) {
         token.id = user.id;
-        token.role = user.role;
+        token.role = user.role as UserRole;
         token.username = user.username;
-        // <<< YENİ ALANLARI EKLE <<<
         token.firstName = user.firstName;
         token.lastName = user.lastName;
-        // ------------------------
         token.isBanned = user.isBanned;
         token.banExpiresAt = user.banExpiresAt;
         token.profileImagePublicId = user.profileImagePublicId;
         token.bannerImagePublicId = user.bannerImagePublicId;
-        return token;
-      }
-
-      // 2. Session Güncelleme Tetiklendiğinde (`useSession().update()`)
-      if (trigger === "update" && session) {
-        // Gelen yeni session bilgisiyle token'ı güvenli bir şekilde güncelle
-        // Sadece izin verilen alanları güncelle, her şeyi değil
-        if (session.user) {
-            token.firstName = session.user.firstName;
-            token.lastName = session.user.lastName;
-            token.username = session.user.username;
-            token.profileImagePublicId = session.user.profileImagePublicId;
-            token.bannerImagePublicId = session.user.bannerImagePublicId;
-        }
-        return token;
+        // --- DEĞİŞİKLİK 2: Gelen user objesinden artistProfileId'yi token'a ata ---
+        // `authorize` fonksiyonunda bu alanı zaten eklemiştik.
+        token.artistProfileId = (user as any).artistProfileId; 
       }
       
-      // 3. Periyodik Veritabanı Kontrolü (Bu kısım zaten iyi, ama buraya da ekleyelim)
-      // Bu, admin tarafından bir kullanıcının rolü değiştirildiğinde yansıtılmasını sağlar.
-      // Sık kontrol etmemek için bir zamanlayıcı eklenebilir, şimdilik her istekte kontrol edelim.
+      // Not: Periyodik veritabanı kontrolünü şimdilik devre dışı bırakıyorum.
+      // Her istekte veritabanına gitmek performansı düşürebilir.
+      // Bunu daha sonra, session.update yetersiz kalırsa tekrar aktif edebiliriz.
+      /*
       const dbUser = await prisma.user.findUnique({ where: { id: Number(token.id) } });
-      if (dbUser) {
-          token.firstName = dbUser.firstName;
-          token.lastName = dbUser.lastName;
-          token.role = dbUser.role;
-          token.isBanned = dbUser.isBanned;
-      }
+      if (dbUser) { ... }
+      */
 
       return token;
     },
     
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.username = token.username as string;
-        // <<< YENİ ALANLARI EKLE <<<
-        session.user.firstName = token.firstName as string | null;
-        session.user.lastName = token.lastName as string | null;
-        // ------------------------
-        session.user.isBanned = token.isBanned as boolean;
-        session.user.banExpiresAt = token.banExpiresAt as Date | null;
-        session.user.profileImagePublicId = token.profileImagePublicId as string | null;
-        session.user.bannerImagePublicId = token.bannerImagePublicId as string | null;
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.username = token.username;
+        session.user.firstName = token.firstName;
+        session.user.lastName = token.lastName;
+        session.user.isBanned = token.isBanned;
+        session.user.banExpiresAt = token.banExpiresAt;
+        session.user.profileImagePublicId = token.profileImagePublicId;
+        session.user.bannerImagePublicId = token.bannerImagePublicId;
+        // --- DEĞİŞİKLİK 3: Token'dan gelen artistProfileId'yi session'a aktar ---
+        session.user.artistProfileId = token.artistProfileId;
       }
       return session;
     },
