@@ -39,10 +39,9 @@ export async function POST(request: NextRequest) {
     // --- YENİ VDS'YE KAYDETME MANTIĞI ---
     
     // 1. Dosyanın kaydedileceği klasör yolunu oluştur: public/uploads/tasks/[projectId]/
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'tasks', validation.data.projectId);
-    await fs.mkdir(uploadDir, { recursive: true }); // Eğer klasör yoksa oluştur
+    const uploadDir = path.join(process.cwd(), '.uploads', 'tasks', validation.data.projectId);
+    await fs.mkdir(uploadDir, { recursive: true });
 
-    // 2. Dosya için benzersiz bir ad oluştur
     const fileName = `${validation.data.characterName.replace(/\s+/g, '_')}_script_${Date.now()}.txt`;
     const filePath = path.join(uploadDir, fileName);
 
@@ -51,7 +50,7 @@ export async function POST(request: NextRequest) {
     await fs.writeFile(filePath, buffer);
 
     // 4. Veritabanına kaydedilecek PUBLIC URL'i oluştur. Bu, tarayıcının dosyaya erişeceği yoldur.
-    const fileUrl = `/uploads/tasks/${validation.data.projectId}/${fileName}`;
+    const fileUrl = `/api/download/tasks/${validation.data.projectId}/${fileName}`;
     
     // --- BİTİŞ ---
 

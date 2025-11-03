@@ -11,15 +11,16 @@ import fs from 'fs/promises';
 
 // VDS'ye dosya yüklemek için yardımcı fonksiyon
 const saveFileToVDS = async (file: File, folder: string, fileName: string): Promise<string> => {
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'tasks', folder);
-    await fs.mkdir(uploadDir, { recursive: true });
+  // Değişiklik burada
+  const uploadDir = path.join(process.cwd(), '.uploads', 'tasks', folder);
+  await fs.mkdir(uploadDir, { recursive: true });
 
-    const filePath = path.join(uploadDir, fileName);
+  const filePath = path.join(uploadDir, fileName);
     const buffer = Buffer.from(await file.arrayBuffer());
     await fs.writeFile(filePath, buffer);
 
     // Tarayıcının erişeceği public URL'i döndür
-    return `/uploads/tasks/${folder}/${fileName}`;
+    return `/api/download/tasks/${folder}/${fileName}`;
 };
 
 
@@ -98,7 +99,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           for (const fileUrl of filesToDelete) {
             if (fileUrl) { 
               try {
-                const filePath = path.join(process.cwd(), 'public', fileUrl);
+                const filePath = path.join(process.cwd(), '.uploads', fileUrl.replace('/api/download', ''));
                 await fs.unlink(filePath);
                 console.log(`Dosya başarıyla silindi: ${filePath}`);
               } catch (err) {
